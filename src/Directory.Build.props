@@ -1,0 +1,32 @@
+<Project>
+  <PropertyGroup>
+    <Copyright>Copyright © 2015-2021 Petabridge</Copyright>
+    <Authors>Petabridge</Authors>
+    <VersionPrefix>0.2.2</VersionPrefix>
+    <PackageReleaseNotes>Added footer that displays assembly version on Pricing UI</PackageReleaseNotes>
+    <PackageIconUrl>
+    </PackageIconUrl>
+    <PackageProjectUrl>
+    </PackageProjectUrl>
+    <PackageLicenseUrl>
+    </PackageLicenseUrl>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <XunitVersion>2.4.1</XunitVersion>
+    <TestSdkVersion>16.9.4</TestSdkVersion>
+    <AkkaVersion>1.4.20</AkkaVersion>
+    <AkkaBootstrapVersion>0.5.2</AkkaBootstrapVersion>
+    <AkkaPersistenceExtrasVersion>0.5.2</AkkaPersistenceExtrasVersion>
+    <FluentAssertionsVersion>5.10.3</FluentAssertionsVersion>
+    <GoogleProtobufVersion>3.17.1</GoogleProtobufVersion>
+    <PetabridgeCmdVersion>0.8.5</PetabridgeCmdVersion>
+    <MicrosoftExtensionsVersion>3.1.0</MicrosoftExtensionsVersion>
+    <PhobosVersion>1.1.4</PhobosVersion>
+    <AppMetricsVersion>4.2.0</AppMetricsVersion>
+    <JaegerVersion>1.0.0</JaegerVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <NetVersion>net5.0</NetVersion>
+  </PropertyGroup>
+</Project>
