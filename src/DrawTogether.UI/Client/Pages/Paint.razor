@@ -4,10 +4,13 @@
 
 <h3>Paint!</h3>
 
+<ColorPicker ColorValueChanged="UpdateColor"></ColorPicker>
+<CursorPicker CursorSizeChanged="UpdateCursorSize"></CursorPicker>
+
 <section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;" 
          @onmousemove="MoveCursor" onmousedown="" onmouseup="">
     <svg width="900" height="500" >
-        <Circle radius="8" cursorId="user" cX="@cX" cY="@cY" fillColor="black" borderColor="black" />
+        <Circle radius="@CursorSize" cursorId="user" cX="@cX" cY="@cY" fillColor="@Color" borderColor="@Color" />
         @foreach (var c in strokes)
         {
             <Circle radius="@c.cursorSize" cX="@c.cX" cY="@c.cY" fillColor="@c.color" borderColor="@c.color" />
@@ -17,12 +20,16 @@
 
 <p>@mousePointerMessage</p>
 
+<button id="reset" @onclick="ResetScreen">Clear Screen</button>
+
 @code {
     List<StrokeData> strokes = new List<StrokeData>();
 
     double cX = 110.0d;
     double cY = 110.0d;
     private string mousePointerMessage = "foo";
+    private string Color = "black";
+    private int CursorSize = 8;
 
     private void MoveCursor(MouseEventArgs e)
     {
@@ -32,7 +39,22 @@
         mousePointerMessage = $"Moving circle to {cX},{cY} [button pressed? {e.Buttons}]";
         if (e.Buttons == 1)
         {
-            strokes.Add(new StrokeData() { cursorSize = 8, cX = e.OffsetX, cY = e.OffsetY, color = "black" });
+            strokes.Add(new StrokeData() { cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color });
         }
+    }
+
+    private void UpdateColor(string color)
+    {
+        Color = color;
+    }
+
+    private void UpdateCursorSize(int cursorSize)
+    {
+        CursorSize = cursorSize;
+    }
+
+    private void ResetScreen()
+    {
+        strokes.Clear();
     }
 }
