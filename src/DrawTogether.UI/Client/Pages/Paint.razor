@@ -1,0 +1,38 @@
+﻿@page "/paint"
+@using DrawTogether.UI.Client.Components;
+@using DrawTogether.UI.Shared
+
+<h3>Paint!</h3>
+
+<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;" 
+         @onmousemove="MoveCursor" onmousedown="" onmouseup="">
+    <svg width="900" height="500" >
+        <Circle radius="8" cursorId="user" cX="@cX" cY="@cY" fillColor="black" borderColor="black" />
+        @foreach (var c in strokes)
+        {
+            <Circle radius="@c.cursorSize" cX="@c.cX" cY="@c.cY" fillColor="@c.color" borderColor="@c.color" />
+        }
+    </svg>
+</section>
+
+<p>@mousePointerMessage</p>
+
+@code {
+    List<StrokeData> strokes = new List<StrokeData>();
+
+    double cX = 110.0d;
+    double cY = 110.0d;
+    private string mousePointerMessage = "foo";
+
+    private void MoveCursor(MouseEventArgs e)
+    {
+        //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
+        cX = e.OffsetX;
+        cY = e.OffsetY;
+        mousePointerMessage = $"Moving circle to {cX},{cY} [button pressed? {e.Buttons}]";
+        if (e.Buttons == 1)
+        {
+            strokes.Add(new StrokeData() { cursorSize = 8, cX = e.OffsetX, cY = e.OffsetY, color = "black" });
+        }
+    }
+}
