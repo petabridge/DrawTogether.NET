@@ -73,7 +73,7 @@
     private string Color = "black";
     private int CursorSize = 8;
 
-    private async Task MoveCursor(MouseEventArgs e)
+    private void MoveCursor(MouseEventArgs e)
     {
         //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
         cX = e.OffsetX;
@@ -82,7 +82,7 @@
         if (e.Buttons == 1)
         {
             var newStroke = new StrokeData() {cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color};
-            await _hubConnection.SendAsync("AddStrokes", SessionId, new[]{ newStroke });
+            _hubConnection.SendAsync("AddStrokes", SessionId, new[]{ newStroke });
         }
     }
 

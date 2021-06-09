@@ -23,8 +23,10 @@ namespace DrawTogether.UI.Server.Hubs
         /// Connects this SignalR User to a paint session in progress.
         /// </summary>
         /// <param name="sessionId">The unique id of a specific paint session.</param>
-        public void JoinSession(string sessionId)
+        public async Task JoinSession(string sessionId)
         {
+            await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
+
             // need to have some sort of service handle here for sending / retrieving state
             _sessionHandler.Handle(new PaintSessionProtocol.JoinPaintSession(sessionId, Context.ConnectionId));
         }
