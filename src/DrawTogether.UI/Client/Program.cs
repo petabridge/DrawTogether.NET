@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Akka.Actor;
+using Akka.Configuration;
 using DrawTogether.UI.Client.Services;
 
 namespace DrawTogether.UI.Client
@@ -17,6 +19,13 @@ namespace DrawTogether.UI.Client
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
+
+
+            builder.Services.AddSingleton<AkkaService>(sp =>
+            {
+                var actorSystem = ActorSystem.Create("BLAZOR", @"akka.loggers = []");
+                return new AkkaService(actorSystem);
+            });
 
             builder.Services.AddSingleton<IPaintSessionGenerator, GuidPaintSessionGenerator>();
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

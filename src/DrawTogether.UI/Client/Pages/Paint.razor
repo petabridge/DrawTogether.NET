@@ -1,8 +1,11 @@
 ﻿@page "/paint/{sessionId}"
 @using DrawTogether.UI.Client.Components;
+@using DrawTogether.UI.Client.Services
 @using DrawTogether.UI.Shared
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager navigationManager;
+@inject AkkaService akkaService;
+@implements IDisposable;
 
 <h3>Paint!</h3>
 
@@ -33,6 +36,7 @@
     List<StrokeData> ClientStrokes = new List<StrokeData>();
 
     private string _hubUrl;
+    private IDebouncerService _debouncer;
     private HubConnection _hubConnection;
 
     protected override async Task OnInitializedAsync()
@@ -53,6 +57,8 @@
         await _hubConnection.StartAsync();
 
         await _hubConnection.SendAsync("JoinSession", SessionId);
+
+        _debouncer = akkaService.GetDebouncer(_hubConnection, SessionId);
 
         await base.OnInitializedAsync();
     }
@@ -82,7 +88,7 @@
         if (e.Buttons == 1)
         {
             var newStroke = new StrokeData() {cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color};
-            _hubConnection.SendAsync("AddStrokes", SessionId, new[]{ newStroke });
+            _debouncer.Push(newStroke);
         }
     }
 
@@ -100,4 +106,10 @@
     {
         //strokes.Clear();
     }
+
+    public void Dispose()
+    {
+        _debouncer.Dispose();
+    }
+
 }
