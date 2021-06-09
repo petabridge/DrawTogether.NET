@@ -1,6 +1,8 @@
 ﻿@page "/paint/{sessionId}"
 @using DrawTogether.UI.Client.Components;
 @using DrawTogether.UI.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager navigationManager;
 
 <h3>Paint!</h3>
 
@@ -11,7 +13,7 @@
          @onmousemove="MoveCursor" onmousedown="" onmouseup="">
     <svg width="900" height="500" >
         <Circle radius="@CursorSize" cursorId="user" cX="@cX" cY="@cY" fillColor="@Color" borderColor="@Color" />
-        @foreach (var c in strokes)
+        @foreach (var c in ClientStrokes)
         {
             <Circle radius="@c.cursorSize" cX="@c.cX" cY="@c.cY" fillColor="@c.color" borderColor="@c.color" />
         }
@@ -20,21 +22,58 @@
 
 <p>@mousePointerMessage</p>
 
+<p>@blazorHubDebugMessage</p>
+
 <button id="reset" @onclick="ResetScreen">Clear Screen</button>
 
 @code {
     [Parameter]
     public string SessionId { get; set; }
 
-    List<StrokeData> strokes = new List<StrokeData>();
+    List<StrokeData> ClientStrokes = new List<StrokeData>();
+
+    private string _hubUrl;
+    private HubConnection _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Create the chat client
+        var baseUrl = navigationManager.BaseUri;
+
+        _hubUrl = navigationManager.BaseUri.TrimEnd('/') + DrawHubConstants.HubUri;
+
+        blazorHubDebugMessage = $"Attempting to connect to {_hubUrl}";
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(_hubUrl)
+            .Build();
+
+        _hubConnection.On<StrokeData[]>("DrawStrokes", DrawStrokes);
+
+        await _hubConnection.StartAsync();
+
+        await _hubConnection.SendAsync("JoinSession", SessionId);
+
+        await base.OnInitializedAsync();
+    }
+
+    private void DrawStrokes(StrokeData[] strokes)
+    {
+        ClientStrokes.AddRange(strokes);
+
+        // Inform blazor the UI needs updating
+        StateHasChanged();
+    }
+
 
     double cX = 110.0d;
     double cY = 110.0d;
     private string mousePointerMessage = "foo";
+    private string blazorHubDebugMessage = "bar";
     private string Color = "black";
     private int CursorSize = 8;
 
-    private void MoveCursor(MouseEventArgs e)
+    private async Task MoveCursor(MouseEventArgs e)
     {
         //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
         cX = e.OffsetX;
@@ -42,7 +81,8 @@
         mousePointerMessage = $"Moving circle to {cX},{cY} [button pressed? {e.Buttons}]";
         if (e.Buttons == 1)
         {
-            strokes.Add(new StrokeData() { cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color });
+            var newStroke = new StrokeData() {cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color};
+            await _hubConnection.SendAsync("AddStrokes", SessionId, new[]{ newStroke });
         }
     }
 
@@ -58,6 +98,6 @@
 
     private void ResetScreen()
     {
-        strokes.Clear();
+        //strokes.Clear();
     }
 }

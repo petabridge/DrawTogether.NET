@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using System.Linq;
 using DrawTogether.UI.Server.Hubs;
 using DrawTogether.UI.Server.Services;
+using DrawTogether.UI.Shared;
 
 namespace DrawTogether.UI.Server
 {
@@ -27,6 +28,7 @@ namespace DrawTogether.UI.Server
             services.AddAkka();
             services.AddTransient<IDrawHubHandler, DrawHubHandler>();
             services.AddSignalR();
+            services.AddServerSideBlazor();
             services.AddControllersWithViews();
             services.AddRazorPages();
         }
@@ -55,7 +57,7 @@ namespace DrawTogether.UI.Server
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapBlazorHub();
-                endpoints.MapHub<DrawHub>(DrawHub.HubUri);
+                endpoints.MapHub<DrawHub>(DrawHubConstants.HubUri);
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
                 endpoints.MapFallbackToFile("index.html");

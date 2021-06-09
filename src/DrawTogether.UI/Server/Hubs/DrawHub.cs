@@ -12,8 +12,6 @@ namespace DrawTogether.UI.Server.Hubs
 {
     public sealed class DrawHub : Hub
     {
-        public const string HubUri = "/draw";
-
         private readonly IDrawSessionHandler _sessionHandler;
 
         public DrawHub(IDrawSessionHandler sessionHandler)
