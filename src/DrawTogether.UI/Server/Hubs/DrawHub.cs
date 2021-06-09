@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DrawTogether.UI.Server.Services;
 using DrawTogether.UI.Shared;
+using DrawTogether.UI.Shared.Connectivity;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DrawTogether.UI.Server.Hubs
@@ -27,6 +28,12 @@ namespace DrawTogether.UI.Server.Hubs
         public void JoinSession(string sessionId)
         {
             // need to have some sort of service handle here for sending / retrieving state
+            _sessionHandler.Handle(new PaintSessionProtocol.JoinPaintSession(sessionId, Context.ConnectionId));
+        }
+
+        public void AddStrokes(string sessionId, StrokeData[] strokes)
+        {
+            _sessionHandler.Handle(new PaintSessionProtocol.AddStrokes(sessionId, strokes));
         }
     }
 }

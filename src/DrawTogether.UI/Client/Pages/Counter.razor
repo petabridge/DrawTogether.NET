@@ -1,16 +1,20 @@
-﻿@page "/counter"
+﻿@page "/start"
+@using DrawTogether.UI.Client.Services
+@inject NavigationManager navigationManager
+@inject IPaintSessionGenerator sessionGenerator
 
-<h1>Counter</h1>
+<h1>Launch Paint</h1>
 
-<p>Current count: @currentCount</p>
+<p>TODO: add set of active paint sessions here</p>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<button class="btn btn-primary" @onclick="IncrementCount">Launch New Session</button>
 
 @code {
-    private int currentCount = 0;
 
     private void IncrementCount()
     {
-        currentCount++;
+        var sessionId = sessionGenerator.CreateNewSession();
+        navigationManager.NavigateTo($"/paint/{sessionId}");
     }
+
 }
