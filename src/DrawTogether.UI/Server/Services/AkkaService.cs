@@ -11,10 +11,26 @@ using Akka.Actor;
 using Akka.DependencyInjection;
 using DrawTogether.UI.Server.Actors;
 using DrawTogether.UI.Shared.Connectivity;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace DrawTogether.UI.Server.Services
 {
+    /// <summary>
+    /// INTERNAL API
+    /// </summary>
+    public static class AkkaExtensions
+    {
+        public static void AddAkka(this IServiceCollection services)
+        {
+            // creates an instance of the ISignalRProcessor that can be handled by SignalR
+            services.AddSingleton<IDrawSessionHandler, AkkaService>();
+
+            // starts the IHostedService, which creates the ActorSystem and actors
+            services.AddHostedService<AkkaService>(sp => (AkkaService)sp.GetRequiredService<IDrawSessionHandler>());
+        }
+    }
+
     /// <summary>
     /// Runs in the background of Server process. Hosts <see cref="ActorSystem"/> responsible for powering
     /// actors that track session state data.
