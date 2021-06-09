@@ -6,6 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Linq;
+using DrawTogether.UI.Server.Hubs;
+using DrawTogether.UI.Server.Services;
+using DrawTogether.UI.Shared;
 
 namespace DrawTogether.UI.Server
 {
@@ -22,7 +25,10 @@ namespace DrawTogether.UI.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-
+            services.AddAkka();
+            services.AddTransient<IDrawHubHandler, DrawHubHandler>();
+            services.AddSignalR();
+            services.AddServerSideBlazor();
             services.AddControllersWithViews();
             services.AddRazorPages();
         }
@@ -50,6 +56,8 @@ namespace DrawTogether.UI.Server
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapBlazorHub();
+                endpoints.MapHub<DrawHub>(DrawHubConstants.HubUri);
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
                 endpoints.MapFallbackToFile("index.html");
