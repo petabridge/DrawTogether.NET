@@ -9,8 +9,13 @@ namespace DrawTogether.UI.Shared
     public struct StrokeData
     {
         public int cursorSize { get; set; }
-        public double cX { get; set; }
-        public double cY { get; set; }
+        public Point[] points { get; set; }
         public string color { get; set; }
+    }
+
+    public struct Point
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
     }
 }
