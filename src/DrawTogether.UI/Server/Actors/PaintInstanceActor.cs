@@ -21,7 +21,7 @@ namespace DrawTogether.UI.Server.Actors
         // Handle to the Akka.NET asynchronous logging system
         private readonly ILoggingAdapter _log = Context.GetLogger();
 
-        private readonly List<StrokeData> _strokes = new();
+        private readonly List<ConnectedStroke> _connectedStrokes = new();
         private readonly List<string> _users = new();
         private readonly IDrawHubHandler _hubHandler;
         private readonly string _sessionId;
@@ -41,26 +41,33 @@ namespace DrawTogether.UI.Server.Actors
                 {
                     _log.Debug("User [{0}] joined [{1}]", join.ConnectionId, join.InstanceId);
                     // need to make immutable copy of stroke data and pass it along
-                    var strokeCopy = _strokes.ToArray();
-                   
+                    var strokeCopy = _connectedStrokes.ToArray();
 
                     // sync a single user.
-                    _hubHandler.PushStrokes(join.ConnectionId, _sessionId, strokeCopy);
+                    _hubHandler.PushConnectedStrokes(join.ConnectionId, _sessionId, strokeCopy);
                     _hubHandler.AddUsers(join.ConnectionId, _users.ToArray());
 
-                     // let all users know about the new user
-                     _users.Add(join.UserId);
-                     _hubHandler.AddUser(_sessionId, join.UserId);
+                    // let all users know about the new user
+                    _users.Add(join.UserId);
+                    _hubHandler.AddUser(_sessionId, join.UserId);
                     break;
                 }
-                case AddStrokes add:
+                case AddPointsToConnectedStroke add:
                 {
-                    _strokes.AddRange(add.Strokes);
-                    _log.Info("Added {0} strokes", add.Strokes.Count);
+                    _connectedStrokes.Where(s => s.Id == add.Id).First().Points.AddRange(add.Points);
+                    _log.Info("Added {0} strokes", add.Points.Count);
                     // sync ALL users
                     // TODO: look into zero-copy for this
-                    _hubHandler.PushStrokes(_sessionId, add.Strokes.ToArray());
+                    _hubHandler.AddPointsToConnectedStroke(_sessionId, add.Id, add.Points.ToArray());
                     break;
+                }
+                case CreateConnectedStroke create:
+                {
+                _connectedStrokes.Add(create.ConnectedStroke);
+                _log.Info("Created Connected Stroke");
+
+                _hubHandler.CreateNewConnectedStroke(_sessionId, create.ConnectedStroke);
+                break;
                 }
                 case ReceiveTimeout _:
                 {

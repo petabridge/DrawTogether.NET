@@ -4,6 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DrawTogether.UI.Server.Hubs;
@@ -17,9 +18,17 @@ namespace DrawTogether.UI.Server.Services
     /// </summary>
     public interface IDrawHubHandler
     {
-        Task PushStrokes(string sessionId, StrokeData[] strokes);
+        Task AddPointsToConnectedStroke(string sessionId, Guid Id, Point[] points);
 
-        Task PushStrokes(string connectionId, string sessionId, StrokeData[] strokes);
+        Task AddPointsToConnectedStroke(string connectionId, string sessionId, Guid Id, Point[] points);
+
+        Task CreateNewConnectedStroke(string sessionId, ConnectedStroke connectedStroke);
+
+        Task CreateNewConnectedStroke(string connectionId, string sessionId, ConnectedStroke connectedStroke);
+
+        Task PushConnectedStrokes(string sessionId, ConnectedStroke[] connectedStrokes);
+
+        Task PushConnectedStrokes(string connectionId, string sessionId, ConnectedStroke[] connectedStrokes);
 
         Task AddUser(string sessionId, string userName);
 
@@ -35,14 +44,34 @@ namespace DrawTogether.UI.Server.Services
             _drawHub = drawHub;
         }
 
-        public async Task PushStrokes(string sessionId, StrokeData[] strokes)
+        public async Task AddPointsToConnectedStroke(string sessionId, Guid Id, Point[] points)
         {
-            await _drawHub.Clients.Group(sessionId).SendAsync("DrawStrokes", strokes).ConfigureAwait(false);
+            await _drawHub.Clients.Group(sessionId).SendAsync("AddPointsToConnectedStroke", Id, points).ConfigureAwait(false);
         }
 
-        public async Task PushStrokes(string connectionId, string sessionId, StrokeData[] strokes)
+        public async Task AddPointsToConnectedStroke(string connectionId, string sessionId, Guid Id, Point[] points)
         {
-            await _drawHub.Clients.Client(connectionId).SendAsync("DrawStrokes", strokes).ConfigureAwait(false);
+            await _drawHub.Clients.Client(connectionId).SendAsync("AddPointsToConnectedStroke", Id, points).ConfigureAwait(false);
+        }
+
+        public async Task CreateNewConnectedStroke(string sessionId, ConnectedStroke connectedStroke)
+        {
+            await _drawHub.Clients.Group(sessionId).SendAsync("CreateConnectedStroke", connectedStroke).ConfigureAwait(false);
+        }
+
+        public async Task CreateNewConnectedStroke(string connectionId, string sessionId, ConnectedStroke connectedStroke)
+        {
+            await _drawHub.Clients.Client(connectionId).SendAsync("CreateConnectedStroke", connectedStroke).ConfigureAwait(false);
+        }
+
+        public async Task PushConnectedStrokes(string sessionId, ConnectedStroke[] connectedStrokes)
+        {
+            await _drawHub.Clients.Group(sessionId).SendAsync("AddConnectedStrokes", connectedStrokes).ConfigureAwait(false);
+        }
+
+        public async Task PushConnectedStrokes(string connectionId, string sessionId, ConnectedStroke[] connectedStrokes)
+        {
+            await _drawHub.Clients.Client(connectionId).SendAsync("AddConnectedStrokes", connectedStrokes).ConfigureAwait(false);
         }
 
         public async Task AddUser(string sessionId, string userName)

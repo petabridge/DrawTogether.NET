@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Akka.Actor;
 
 namespace DrawTogether.UI.Shared.Connectivity
@@ -32,17 +33,33 @@ namespace DrawTogether.UI.Shared.Connectivity
             public string UserId { get; }
         }
 
-        public sealed class AddStrokes : IPaintSessionMessage
+        public sealed class AddPointsToConnectedStroke : IPaintSessionMessage
         {
-            public AddStrokes(string instanceId, IReadOnlyList<StrokeData> strokes)
+            public AddPointsToConnectedStroke(string instanceId, Guid id, Point[] points)
             {
                 InstanceId = instanceId;
-                Strokes = strokes;
+                Id = id;
+                Points = points;
             }
 
             public string InstanceId { get; }
 
-            public IReadOnlyList<StrokeData> Strokes { get; }
+            public Guid Id { get; }
+
+            public IReadOnlyList<Point> Points { get; }
+        }
+
+        public sealed class CreateConnectedStroke : IPaintSessionMessage
+        {
+            public CreateConnectedStroke(string instanceId, ConnectedStroke connectedStroke)
+            {
+                InstanceId = instanceId;
+                ConnectedStroke = connectedStroke;
+            }
+
+            public string InstanceId { get; }
+
+            public ConnectedStroke ConnectedStroke { get; }
         }
 
         //public sealed class SubscribeToSession : IPaintSessionMessage
