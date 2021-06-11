@@ -49,7 +49,7 @@ namespace DrawTogether.UI.Server.Actors
                 case AddStrokes add:
                 {
                     _strokes.AddRange(add.Strokes);
-
+                    _log.Info("Added {0} strokes", add.Strokes.Count);
                     // sync ALL users
                     // TODO: look into zero-copy for this
                     _hubHandler.PushStrokes(_sessionId, add.Strokes.ToArray());
