@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using System.Reactive.Subjects
 @using System.Reactive.Linq
+@using System.Security.Policy
 @inject NavigationManager navigationManager;
 @implements IDisposable;
 
@@ -23,6 +24,15 @@
     </svg>
 </section>
 
+<div id="active-users">
+    <ol>
+        @foreach (var u in Users)
+        {
+            <li>@u</li>
+        }
+    </ol>
+</div>
+
 <p>@mousePointerMessage</p>
 
 <p>@blazorHubDebugMessage</p>
@@ -34,6 +44,7 @@
     public string SessionId { get; set; }
 
     List<StrokeData> ClientStrokes = new List<StrokeData>();
+    HashSet<string> Users = new HashSet<string>();
 
     private string _hubUrl;
     private HubConnection _hubConnection;
@@ -52,6 +63,7 @@
             .Build();
 
         _hubConnection.On<StrokeData[]>("DrawStrokes", DrawStrokes);
+        _hubConnection.On<string>("AddUser", AddUser);
 
         await _hubConnection.StartAsync();
 
@@ -76,6 +88,18 @@
         ClientStrokes.AddRange(strokes);
 
         // Inform blazor the UI needs updating
+        StateHasChanged();
+    }
+
+    private void AddUser(string userName)
+    {
+        Users.Add(userName);
+        StateHasChanged();
+    }
+
+    private void RemoveUser(string userName)
+    {
+        Users.Remove(userName);
         StateHasChanged();
     }
 

@@ -15,10 +15,11 @@ namespace DrawTogether.UI.Shared.Connectivity
 
         public sealed class JoinPaintSession : IPaintSessionMessage
         {
-            public JoinPaintSession(string instanceId, string connectionId)
+            public JoinPaintSession(string instanceId, string connectionId, string userId)
             {
                 InstanceId = instanceId;
                 ConnectionId = connectionId;
+                UserId = userId;
             }
 
             public string InstanceId { get; }
@@ -27,6 +28,8 @@ namespace DrawTogether.UI.Shared.Connectivity
             /// The unique connection id for this websocket in SignalR
             /// </summary>
             public string ConnectionId { get; }
+
+            public string UserId { get; }
         }
 
         public sealed class AddStrokes : IPaintSessionMessage

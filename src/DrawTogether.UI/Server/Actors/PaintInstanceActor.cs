@@ -22,6 +22,7 @@ namespace DrawTogether.UI.Server.Actors
         private readonly ILoggingAdapter _log = Context.GetLogger();
 
         private readonly List<StrokeData> _strokes = new();
+        private readonly List<string> _users = new();
         private readonly IDrawHubHandler _hubHandler;
         private readonly string _sessionId;
         private readonly TimeSpan _idleTimeout = TimeSpan.FromMinutes(20);
@@ -41,9 +42,15 @@ namespace DrawTogether.UI.Server.Actors
                     _log.Debug("User [{0}] joined [{1}]", join.ConnectionId, join.InstanceId);
                     // need to make immutable copy of stroke data and pass it along
                     var strokeCopy = _strokes.ToArray();
+                   
 
                     // sync a single user.
                     _hubHandler.PushStrokes(join.ConnectionId, _sessionId, strokeCopy);
+                    _hubHandler.AddUsers(join.ConnectionId, _users.ToArray());
+
+                     // let all users know about the new user
+                     _users.Add(join.UserId);
+                     _hubHandler.AddUser(_sessionId, join.UserId);
                     break;
                 }
                 case AddStrokes add:

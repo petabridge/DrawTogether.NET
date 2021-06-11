@@ -8,7 +8,9 @@ using Microsoft.Extensions.Hosting;
 using System.Linq;
 using DrawTogether.UI.Server.Hubs;
 using DrawTogether.UI.Server.Services;
+using DrawTogether.UI.Server.Services.Users;
 using DrawTogether.UI.Shared;
+using Microsoft.AspNetCore.SignalR;
 
 namespace DrawTogether.UI.Server
 {
@@ -25,6 +27,7 @@ namespace DrawTogether.UI.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<IUserIdProvider, RandomNameService>();
             services.AddAkka();
             services.AddTransient<IDrawHubHandler, DrawHubHandler>();
             services.AddSignalR();
