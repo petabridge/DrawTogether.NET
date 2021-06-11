@@ -18,7 +18,7 @@
         <Circle radius="@CursorSize" cursorId="user" cX="@cX" cY="@cY" fillColor="@Color" borderColor="@Color" />
         @foreach (var c in ClientStrokes)
         {
-            <polyline points="@string.Join(' ', c.points.Select(x => $"{x.x}, {x.y}"))" 
+            <polyline points="@string.Join(' ', c.points.Select(x => $"{x.X}, {x.Y}"))" 
                     stroke="@(c.color)" stroke-width="@(c.cursorSize)"/>
             //<Circle radius="@c.cursorSize" cX="@c.cX" cY="@c.cY" fillColor="@c.color" borderColor="@c.color" />
         }
@@ -68,9 +68,15 @@
         await base.OnInitializedAsync();
     }
 
-    private void OnNext(IList<StrokeData> obj)
+    private void OnNext(IList<Point> obj)
     {
-        _hubConnection.SendAsync("AddStrokes", SessionId, obj.ToArray());
+        var strokeData = new StrokeData()
+        {
+            color = Color,
+            cursorSize = CursorSize,
+            points = obj.ToArray(),
+        };
+        _hubConnection.SendAsync("AddStrokes", SessionId, new[]{ strokeData });
     }
 
     private void DrawStrokes(StrokeData[] strokes)
@@ -87,7 +93,7 @@
     private string mousePointerMessage = "foo";
     private string blazorHubDebugMessage = "bar";
     private string Color = "black";
-    private Subject<StrokeData> _strokeSubject = new Subject<StrokeData>();
+    private Subject<Point> _strokeSubject = new Subject<Point>();
     private IDisposable OutboundStrokes { get; set; }
     private int CursorSize = 8;
 
@@ -96,11 +102,13 @@
         //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
         cX = e.OffsetX;
         cY = e.OffsetY;
-        mousePointerMessage = $"Moving circle to {cX},{cY} [button pressed? {e.Buttons}]";
+        //mousePointerMessage = $"Moving circle to {cX},{cY} [button pressed? {e.Buttons}]";
         if (e.Buttons == 1)
         {
-            var newStroke = new StrokeData() {cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color};
-            _strokeSubject.OnNext(newStroke);
+            var x = e.OffsetX;
+            var y = e.OffsetY;
+            mousePointerMessage = $"Writing point {x},{y} [button pressed? {e.Buttons}]";
+            _strokeSubject.OnNext(new Point(){ X = x, Y = y });
         }
     }
 
