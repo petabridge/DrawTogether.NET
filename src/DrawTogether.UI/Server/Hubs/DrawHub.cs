@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DrawTogether.UI.Server.Services;
+using DrawTogether.UI.Server.Services.Users;
 using DrawTogether.UI.Shared;
 using DrawTogether.UI.Shared.Connectivity;
 using Microsoft.AspNetCore.SignalR;
@@ -25,10 +26,11 @@ namespace DrawTogether.UI.Server.Hubs
         /// <param name="sessionId">The unique id of a specific paint session.</param>
         public async Task JoinSession(string sessionId)
         {
+
             await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
 
             // need to have some sort of service handle here for sending / retrieving state
-            _sessionHandler.Handle(new PaintSessionProtocol.JoinPaintSession(sessionId, Context.ConnectionId));
+            _sessionHandler.Handle(new PaintSessionProtocol.JoinPaintSession(sessionId, Context.ConnectionId, Context.UserIdentifier ?? "BadUser"));
         }
 
         public void AddStrokes(string sessionId, StrokeData[] strokes)
