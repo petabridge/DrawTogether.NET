@@ -18,7 +18,9 @@
         <Circle radius="@CursorSize" cursorId="user" cX="@cX" cY="@cY" fillColor="@Color" borderColor="@Color" />
         @foreach (var c in ClientStrokes)
         {
-            <Circle radius="@c.cursorSize" cX="@c.cX" cY="@c.cY" fillColor="@c.color" borderColor="@c.color" />
+            <polyline points="@string.Join(' ', c.points.Select(x => $"{x.x}, {x.y}"))" 
+                    stroke="@(c.color)" stroke-width="@(c.cursorSize)"/>
+            //<Circle radius="@c.cursorSize" cX="@c.cX" cY="@c.cY" fillColor="@c.color" borderColor="@c.color" />
         }
     </svg>
 </section>
