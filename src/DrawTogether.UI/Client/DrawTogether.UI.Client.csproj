@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Shared\DrawTogether.UI.Shared.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
 </Project>
