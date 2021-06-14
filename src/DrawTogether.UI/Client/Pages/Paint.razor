@@ -79,32 +79,32 @@
         await base.OnInitializedAsync();
     }
 
-	protected string PathData(List<Point> Points) {
-		var result = "";
-		if (Points.Count >= 2)
-		{
-			result = $"M {Points[0].x} {Points[0].y} ";
-			for (int i = 1; i < Points.Count -1; i++)
-			{
-				result += $"S {Points[i - 1].x / 6 + Points[i].x - Points[i+1].x / 6} {Points[i - 1].y / 6 + Points[i].y - Points[i+1].y / 6} {Points[i].x} {Points[i].y} ";
-			}
-			result += $"S {Points[^2].x /  3 + Points[^1].x * 2 / 3} {Points[^2].y / 3 + Points[^1].y * 2 / 3} {Points[^1].x} {Points[^1].y} ";
-		}
-		return result;
-	}
-	
+    protected string PathData(List<Point> Points) {
+        var result = "";
+        if (Points.Count >= 2)
+        {
+            result = $"M {Points[0].x} {Points[0].y} ";
+            for (int i = 1; i < Points.Count -1; i++)
+            {
+                result += $"S {Points[i - 1].x / 6 + Points[i].x - Points[i+1].x / 6} {Points[i - 1].y / 6 + Points[i].y - Points[i+1].y / 6} {Points[i].x} {Points[i].y} ";
+            }
+            result += $"S {Points[^2].x /  3 + Points[^1].x * 2 / 3} {Points[^2].y / 3 + Points[^1].y * 2 / 3} {Points[^1].x} {Points[^1].y} ";
+        }
+        return result;
+    }
+    
     private void OnNext(IList<(Guid Id, double x, double y)> strokes)
     {
-		strokes.GroupBy(s => s.Id).ToList().ForEach(points =>
-		{
-			_hubConnection.SendAsync("AddPointsToConnectedStroke", SessionId, points.Key, points.Select(p => new Point(p.x, p.y)).ToArray());
-		});
+        strokes.GroupBy(s => s.Id).ToList().ForEach(points =>
+        {
+            _hubConnection.SendAsync("AddPointsToConnectedStroke", SessionId, points.Key, points.Select(p => new Point(p.x, p.y)).ToArray());
+        });
     }
 
     private void CreateConnectedStroke(ConnectedStroke connectedStroke)
     {
         ConnectedStrokes.Add(connectedStroke);
-		
+        
         // Inform blazor the UI needs updating
         StateHasChanged();
     }
@@ -112,16 +112,16 @@
     private void AddConnectedStrokes(ConnectedStroke[] connectedStrokes)
     {
         ConnectedStrokes.AddRange(connectedStrokes);
-		
+        
         // Inform blazor the UI needs updating
         StateHasChanged();
     }
 
-	private void AddPointsToConnectedStroke(Guid id, Point[] points)
-	{
-		ConnectedStrokes.Where(s => s.Id == id).First().Points.AddRange(points);
+    private void AddPointsToConnectedStroke(Guid id, Point[] points)
+    {
+        ConnectedStrokes.Where(s => s.Id == id).First().Points.AddRange(points);
         StateHasChanged();
-	}
+    }
 
     private void AddUser(string userName)
     {
@@ -145,17 +145,17 @@
     private IDisposable OutboundStrokes { get; set; }
     private int CursorSize = 8;
 
-	private ConnectedStroke CurrentConnectedStroke {get; set;}
+    private ConnectedStroke CurrentConnectedStroke {get; set;}
 
     private void CursorDown(MouseEventArgs e)
-	{
-		CurrentConnectedStroke = new ConnectedStroke() { Id = Guid.NewGuid(), Stroke = Color, StrokeWidth = CursorSize };
-		_hubConnection.SendAsync("CreateConnectedStroke", SessionId, CurrentConnectedStroke);
+    {
+        CurrentConnectedStroke = new ConnectedStroke() { Id = Guid.NewGuid(), Stroke = Color, StrokeWidth = CursorSize };
+        _hubConnection.SendAsync("CreateConnectedStroke", SessionId, CurrentConnectedStroke);
         if (e.Buttons == 1)
         {
             _strokeSubject.OnNext((CurrentConnectedStroke.Id, e.OffsetX, e.OffsetY));
         }
-	}
+    }
 
     private void CursorMove(MouseEventArgs e)
     {
@@ -170,12 +170,12 @@
     }
 
     private void CursorUp(MouseEventArgs e)
-	{
+    {
         if (e.Buttons == 1)
         {
             _strokeSubject.OnNext((CurrentConnectedStroke.Id, e.OffsetX, e.OffsetY));
         }
-	}
+    }
 
     private void UpdateColor(string color)
     {
