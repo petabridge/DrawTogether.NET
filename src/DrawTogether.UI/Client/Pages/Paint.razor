@@ -18,7 +18,7 @@
     <svg width="900" height="500" >
         @foreach (var ConnectedStroke in ConnectedStrokes)
         {
-			<path d="@PathData(ConnectedStroke.Points)" fill="None" stroke="@ConnectedStroke.Stroke" stroke-width="@ConnectedStroke.StrokeWidth" ></path>
+            <path d="@PathData(ConnectedStroke.Points)" fill="None" stroke="@ConnectedStroke.Stroke" stroke-width="@ConnectedStroke.StrokeWidth" ></path>
         }
     </svg>
 </section>
@@ -39,7 +39,7 @@
 <button id="reset" @onclick="ResetScreen">Clear Screen</button>
 
 @code {
-	[Parameter]
+    [Parameter]
     public string SessionId { get; set; }
 
     List<ConnectedStroke> ConnectedStrokes = new ();
@@ -159,9 +159,9 @@
 
     private void CursorMove(MouseEventArgs e)
     {
-		cX = e.OffsetX;
-		cY = e.OffsetY;
         //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
+        cX = e.OffsetX;
+        cY = e.OffsetY;
         mousePointerMessage = $"Moving circle to {e.OffsetX},{e.OffsetY} [button pressed? {e.Buttons}]";
         if (e.Buttons == 1)
         {
