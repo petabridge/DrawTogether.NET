@@ -8,16 +8,19 @@ using DrawTogether.UI.Server.Services.Users;
 using DrawTogether.UI.Shared;
 using DrawTogether.UI.Shared.Connectivity;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 
 namespace DrawTogether.UI.Server.Hubs
 {
     public sealed class DrawHub : Hub
     {
         private readonly IDrawSessionHandler _sessionHandler;
+        private readonly ILogger<DrawHub> _log;
 
-        public DrawHub(IDrawSessionHandler sessionHandler)
+        public DrawHub(IDrawSessionHandler sessionHandler, ILogger<DrawHub> log)
         {
             _sessionHandler = sessionHandler;
+            _log = log;
         }
 
         /// <summary>
@@ -36,6 +39,12 @@ namespace DrawTogether.UI.Server.Hubs
         public void AddStrokes(string sessionId, StrokeData[] strokes)
         {
             _sessionHandler.Handle(new PaintSessionProtocol.AddStrokes(sessionId, strokes));
+        }
+
+        public override Task OnConnectedAsync()
+        {
+            _log.LogInformation("Received connection from [{0}->{1}]", Context.ConnectionId, Context.UserIdentifier);
+            return base.OnConnectedAsync();
         }
     }
 }
