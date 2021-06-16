@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using DrawTogether.UI.Client.Auth;
 using DrawTogether.UI.Client.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace DrawTogether.UI.Client
 {
@@ -18,6 +20,8 @@ namespace DrawTogether.UI.Client
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
 
+            builder.Services.AddAuthorizationCore();
+            builder.Services.AddScoped<AuthenticationStateProvider, RandomAuthStateProvider>();
             builder.Services.AddSingleton<IPaintSessionGenerator, GuidPaintSessionGenerator>();
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 

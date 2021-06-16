@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Akka.Util;
+﻿using Akka.Util;
 
-namespace DrawTogether.UI.Server.Services.Users
+namespace DrawTogether.UI.Shared
 {
     public static class UserNamingService
     {
