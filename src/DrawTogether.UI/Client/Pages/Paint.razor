@@ -2,9 +2,6 @@
 @using DrawTogether.UI.Client.Components;
 @using DrawTogether.UI.Shared
 @using Microsoft.AspNetCore.SignalR.Client
-@using System.Reactive.Subjects
-@using System.Reactive.Linq
-@using System.Security.Policy
 @inject NavigationManager navigationManager;
 @implements IDisposable;
 
@@ -67,18 +64,12 @@
 
         await _hubConnection.StartAsync();
 
-        OutboundStrokes = _strokeSubject
-            //.Throttle(TimeSpan.FromMilliseconds(20))
-            .Buffer(TimeSpan.FromMilliseconds(75), 20)
-            .Where(x => x.Count > 0)
-            .Subscribe(OnNext);
-
         await _hubConnection.SendAsync("JoinSession", SessionId);
 
         await base.OnInitializedAsync();
     }
 
-    private void OnNext(IList<StrokeData> obj)
+    private void OnNext(IEnumerable<StrokeData> obj)
     {
         _hubConnection.SendAsync("AddStrokes", SessionId, obj.ToArray());
     }
@@ -109,7 +100,6 @@
     private string mousePointerMessage = "foo";
     private string blazorHubDebugMessage = "bar";
     private string Color = "black";
-    private Subject<StrokeData> _strokeSubject = new Subject<StrokeData>();
     private IDisposable OutboundStrokes { get; set; }
     private int CursorSize = 8;
 
@@ -122,7 +112,7 @@
         if (e.Buttons == 1)
         {
             var newStroke = new StrokeData() {cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color};
-            _strokeSubject.OnNext(newStroke);
+            OnNext(new []{ newStroke });
         }
     }
 
