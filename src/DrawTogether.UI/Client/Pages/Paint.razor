@@ -2,6 +2,7 @@
 @using DrawTogether.UI.Client.Components;
 @using DrawTogether.UI.Shared
 @using Microsoft.AspNetCore.SignalR.Client
+@using System.Security.Claims
 @inject NavigationManager navigationManager;
 @implements IDisposable;
 
@@ -10,9 +11,9 @@
 <ColorPicker ColorValueChanged="UpdateColor"></ColorPicker>
 <CursorPicker CursorSizeChanged="UpdateCursorSize"></CursorPicker>
 
-<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;" 
+<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
          @onmousemove="MoveCursor" onmousedown="" onmouseup="">
-    <svg width="900" height="500" >
+    <svg width="900" height="500">
         <Circle radius="@CursorSize" cursorId="user" cX="@cX" cY="@cY" fillColor="@Color" borderColor="@Color" />
         @foreach (var c in ClientStrokes)
         {
@@ -40,6 +41,9 @@
     [Parameter]
     public string SessionId { get; set; }
 
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; }
+
     List<StrokeData> ClientStrokes = new List<StrokeData>();
     HashSet<string> Users = new HashSet<string>();
 
@@ -63,6 +67,8 @@
         _hubConnection.On<string>("AddUser", AddUser);
 
         await _hubConnection.StartAsync();
+
+        var user = (await AuthState).User;
 
         await _hubConnection.SendAsync("JoinSession", SessionId);
 
@@ -111,8 +117,8 @@
         mousePointerMessage = $"Moving circle to {cX},{cY} [button pressed? {e.Buttons}]";
         if (e.Buttons == 1)
         {
-            var newStroke = new StrokeData() {cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color};
-            OnNext(new []{ newStroke });
+            var newStroke = new StrokeData() { cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color };
+            OnNext(new[] { newStroke });
         }
     }
 

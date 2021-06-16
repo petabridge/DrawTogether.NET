@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using DrawTogether.UI.Shared;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DrawTogether.UI.Server.Services.Users
@@ -14,8 +15,9 @@ namespace DrawTogether.UI.Server.Services.Users
         private readonly ConcurrentDictionary<string, string> _connectionIdToNames =
             new ConcurrentDictionary<string, string>();
 
-        public string? GetUserId(HubConnectionContext connection)
+        public string GetUserId(HubConnectionContext connection)
         {
+            var identity = connection.User;
             if (_connectionIdToNames.ContainsKey(connection.ConnectionId))
                 return _connectionIdToNames[connection.ConnectionId];
             else
