@@ -2,9 +2,6 @@
 @using DrawTogether.UI.Client.Components;
 @using DrawTogether.UI.Shared
 @using Microsoft.AspNetCore.SignalR.Client
-@using System.Reactive.Subjects
-@using System.Reactive.Linq
-@using System.Security.Policy
 @inject NavigationManager navigationManager;
 @implements IDisposable;
 
@@ -13,14 +10,15 @@
 <ColorPicker ColorValueChanged="UpdateColor"></ColorPicker>
 <CursorPicker CursorSizeChanged="UpdateCursorSize"></CursorPicker>
 
-<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;" 
-         @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
+<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
+        @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
     <svg width="900" height="500" >
+        <Circle radius="@CursorSize" cursorId="user" cX="@cX" cY="@cY" fillColor="@Color" borderColor="@Color" />
         @foreach (var ConnectedStroke in ConnectedStrokes)
         {
-            <path d="@PathData(ConnectedStroke.Points)" fill="None" stroke="@ConnectedStroke.Stroke" stroke-width="@ConnectedStroke.StrokeWidth" ></path>
+            <path d="@PathData(ConnectedStroke.Points)" fill="None" stroke="@ConnectedStroke.Stroke" stroke-width="@ConnectedStroke.StrokeWidth"></path>
         }
-    </svg>
+ </svg>
 </section>
 
 <div id="active-users">
@@ -63,48 +61,43 @@
 
         _hubConnection.On<ConnectedStroke>("CreateConnectedStroke", CreateConnectedStroke);
         _hubConnection.On<ConnectedStroke[]>("AddConnectedStrokes", AddConnectedStrokes);
-        _hubConnection.On<Guid, Point[]>("AddPointsToConnectedStroke", AddPointsToConnectedStroke);
+        _hubConnection.On<Guid, Point>("AddPointsToConnectedStroke", AddPointToConnectedStroke);
         _hubConnection.On<string>("AddUser", AddUser);
 
         await _hubConnection.StartAsync();
-
-        OutboundStrokes = _strokeSubject
-            //.Throttle(TimeSpan.FromMilliseconds(20))
-            .Buffer(TimeSpan.FromMilliseconds(75), 20)
-            .Where(x => x.Count > 0)
-            .Subscribe(OnNext);
 
         await _hubConnection.SendAsync("JoinSession", SessionId);
 
         await base.OnInitializedAsync();
     }
 
-    protected string PathData(List<Point> Points) {
+    protected string PathData(List<Point> Points)
+    {
+        // Parameter for smoothness of path in interval [0, 0.5]
+        double smoothness = 1.0 / 3.0;
+
         var result = "";
         if (Points.Count >= 2)
         {
             result = $"M {Points[0].x} {Points[0].y} ";
-            for (int i = 1; i < Points.Count -1; i++)
+            for (int i = 1; i < Points.Count - 1; i++)
             {
-                result += $"S {Points[i - 1].x / 6 + Points[i].x - Points[i+1].x / 6} {Points[i - 1].y / 6 + Points[i].y - Points[i+1].y / 6} {Points[i].x} {Points[i].y} ";
+                result += $"S {Points[i - 1].x * smoothness / 2 + Points[i].x - Points[i + 1].x * smoothness / 2} {Points[i - 1].y * smoothness / 2 + Points[i].y - Points[i + 1].y * smoothness / 2} {Points[i].x} {Points[i].y} ";
             }
-            result += $"S {Points[^2].x /  3 + Points[^1].x * 2 / 3} {Points[^2].y / 3 + Points[^1].y * 2 / 3} {Points[^1].x} {Points[^1].y} ";
+            result += $"S {Points[^2].x * smoothness + Points[^1].x * (1 - smoothness)} {Points[^2].y * smoothness + Points[^1].y * (1 - smoothness)} {Points[^1].x} {Points[^1].y} ";
         }
         return result;
     }
-    
-    private void OnNext(IList<(Guid Id, double x, double y)> strokes)
+
+    private void OnNext(Guid Id, Point point)
     {
-        strokes.GroupBy(s => s.Id).ToList().ForEach(points =>
-        {
-            _hubConnection.SendAsync("AddPointsToConnectedStroke", SessionId, points.Key, points.Select(p => new Point(p.x, p.y)).ToArray());
-        });
+        _hubConnection.SendAsync("AddPointToConnectedStroke", SessionId, Id, point);
     }
 
     private void CreateConnectedStroke(ConnectedStroke connectedStroke)
     {
         ConnectedStrokes.Add(connectedStroke);
-        
+
         // Inform blazor the UI needs updating
         StateHasChanged();
     }
@@ -112,14 +105,14 @@
     private void AddConnectedStrokes(ConnectedStroke[] connectedStrokes)
     {
         ConnectedStrokes.AddRange(connectedStrokes);
-        
+
         // Inform blazor the UI needs updating
         StateHasChanged();
     }
 
-    private void AddPointsToConnectedStroke(Guid id, Point[] points)
+    private void AddPointToConnectedStroke(Guid id, Point point)
     {
-        ConnectedStrokes.Where(s => s.Id == id).First().Points.AddRange(points);
+        ConnectedStrokes.Where(s => s.Id == id).First().Points.Add(point);
         StateHasChanged();
     }
 
@@ -141,11 +134,9 @@
     private string mousePointerMessage = "foo";
     private string blazorHubDebugMessage = "bar";
     private string Color = "black";
-    private Subject<(Guid Id, double x, double y)> _strokeSubject = new ();
-    private IDisposable OutboundStrokes { get; set; }
     private int CursorSize = 8;
 
-    private ConnectedStroke CurrentConnectedStroke {get; set;}
+    private ConnectedStroke CurrentConnectedStroke { get; set; }
 
     private void CursorDown(MouseEventArgs e)
     {
@@ -153,7 +144,7 @@
         _hubConnection.SendAsync("CreateConnectedStroke", SessionId, CurrentConnectedStroke);
         if (e.Buttons == 1)
         {
-            _strokeSubject.OnNext((CurrentConnectedStroke.Id, e.OffsetX, e.OffsetY));
+            OnNext(CurrentConnectedStroke.Id, new Point(e.OffsetX, e.OffsetY));
         }
     }
 
@@ -165,7 +156,7 @@
         mousePointerMessage = $"Moving circle to {e.OffsetX},{e.OffsetY} [button pressed? {e.Buttons}]";
         if (e.Buttons == 1)
         {
-            _strokeSubject.OnNext((CurrentConnectedStroke.Id, e.OffsetX, e.OffsetY));
+            OnNext(CurrentConnectedStroke.Id, new Point(e.OffsetX, e.OffsetY));
         }
     }
 
@@ -173,7 +164,7 @@
     {
         if (e.Buttons == 1)
         {
-            _strokeSubject.OnNext((CurrentConnectedStroke.Id, e.OffsetX, e.OffsetY));
+            OnNext(CurrentConnectedStroke.Id, new Point(e.OffsetX, e.OffsetY));
         }
     }
 
@@ -195,6 +186,5 @@
     public void Dispose()
     {
         _hubConnection.DisposeAsync();
-        OutboundStrokes.Dispose();
     }
 }
