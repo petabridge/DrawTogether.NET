@@ -46,12 +46,12 @@ namespace DrawTogether.UI.Server.Services
 
         public async Task AddPointToConnectedStroke(string sessionId, Guid Id, Point point)
         {
-            await _drawHub.Clients.Group(sessionId).SendAsync("AddPointsToConnectedStroke", Id, point).ConfigureAwait(false);
+            await _drawHub.Clients.Group(sessionId).SendAsync("AddPointToConnectedStroke", Id, point).ConfigureAwait(false);
         }
 
         public async Task AddPointToConnectedStroke(string connectionId, string sessionId, Guid Id, Point point)
         {
-            await _drawHub.Clients.Client(connectionId).SendAsync("AddPointsToConnectedStroke", Id, point).ConfigureAwait(false);
+            await _drawHub.Clients.Client(connectionId).SendAsync("AddPointToConnectedStroke", Id, point).ConfigureAwait(false);
         }
 
         public async Task CreateNewConnectedStroke(string sessionId, ConnectedStroke connectedStroke)

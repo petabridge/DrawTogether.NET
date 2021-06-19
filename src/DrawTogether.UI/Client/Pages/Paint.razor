@@ -18,7 +18,7 @@
         {
             <path d="@PathData(ConnectedStroke.Points)" fill="None" stroke="@ConnectedStroke.Stroke" stroke-width="@ConnectedStroke.StrokeWidth"></path>
         }
- </svg>
+    </svg>
 </section>
 
 <div id="active-users">
@@ -61,7 +61,7 @@
 
         _hubConnection.On<ConnectedStroke>("CreateConnectedStroke", CreateConnectedStroke);
         _hubConnection.On<ConnectedStroke[]>("AddConnectedStrokes", AddConnectedStrokes);
-        _hubConnection.On<Guid, Point>("AddPointsToConnectedStroke", AddPointToConnectedStroke);
+        _hubConnection.On<Guid, Point>("AddPointToConnectedStroke", AddPointToConnectedStroke);
         _hubConnection.On<string>("AddUser", AddUser);
 
         await _hubConnection.StartAsync();
