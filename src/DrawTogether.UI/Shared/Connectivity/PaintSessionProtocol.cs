@@ -33,20 +33,20 @@ namespace DrawTogether.UI.Shared.Connectivity
             public string UserId { get; }
         }
 
-        public sealed class AddPointsToConnectedStroke : IPaintSessionMessage
+        public sealed class AddPointToConnectedStroke : IPaintSessionMessage
         {
-            public AddPointsToConnectedStroke(string instanceId, Guid id, Point[] points)
+            public AddPointToConnectedStroke(string instanceId, Guid id, Point point)
             {
                 InstanceId = instanceId;
                 Id = id;
-                Points = points;
+                Point = point;
             }
 
             public string InstanceId { get; }
 
             public Guid Id { get; }
 
-            public IReadOnlyList<Point> Points { get; }
+            public Point Point { get; }
         }
 
         public sealed class CreateConnectedStroke : IPaintSessionMessage

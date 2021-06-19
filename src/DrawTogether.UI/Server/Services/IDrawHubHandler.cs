@@ -18,9 +18,9 @@ namespace DrawTogether.UI.Server.Services
     /// </summary>
     public interface IDrawHubHandler
     {
-        Task AddPointsToConnectedStroke(string sessionId, Guid Id, Point[] points);
+        Task AddPointToConnectedStroke(string sessionId, Guid Id, Point point);
 
-        Task AddPointsToConnectedStroke(string connectionId, string sessionId, Guid Id, Point[] points);
+        Task AddPointToConnectedStroke(string connectionId, string sessionId, Guid Id, Point point);
 
         Task CreateNewConnectedStroke(string sessionId, ConnectedStroke connectedStroke);
 
@@ -44,14 +44,14 @@ namespace DrawTogether.UI.Server.Services
             _drawHub = drawHub;
         }
 
-        public async Task AddPointsToConnectedStroke(string sessionId, Guid Id, Point[] points)
+        public async Task AddPointToConnectedStroke(string sessionId, Guid Id, Point point)
         {
-            await _drawHub.Clients.Group(sessionId).SendAsync("AddPointsToConnectedStroke", Id, points).ConfigureAwait(false);
+            await _drawHub.Clients.Group(sessionId).SendAsync("AddPointsToConnectedStroke", Id, point).ConfigureAwait(false);
         }
 
-        public async Task AddPointsToConnectedStroke(string connectionId, string sessionId, Guid Id, Point[] points)
+        public async Task AddPointToConnectedStroke(string connectionId, string sessionId, Guid Id, Point point)
         {
-            await _drawHub.Clients.Client(connectionId).SendAsync("AddPointsToConnectedStroke", Id, points).ConfigureAwait(false);
+            await _drawHub.Clients.Client(connectionId).SendAsync("AddPointsToConnectedStroke", Id, point).ConfigureAwait(false);
         }
 
         public async Task CreateNewConnectedStroke(string sessionId, ConnectedStroke connectedStroke)
