@@ -6,6 +6,7 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
+using Akka.Util.Internal;
 using DrawTogether.UI.Server.Hubs;
 using DrawTogether.UI.Server.Services;
 using DrawTogether.UI.Shared;
@@ -89,31 +90,26 @@ namespace DrawTogether.UI.Server.Actors
 
         private void TransmitActions(IEnumerable<IPaintSessionMessage> actions)
         {
-            _log.Info("BATCHED {0} strokes", actions.Count());
+            var createActions = actions.Where(a => a is CreateConnectedStroke).Select(a => ((CreateConnectedStroke)a).ConnectedStroke);
 
-            foreach (var action in actions)
-            {
-                switch (action)
-                {
-                    case AddPointToConnectedStroke add:
-                        {
-                            _connectedStrokes.Where(s => s.Id == add.Id).First().Points.Add(add.Point);
-                            _log.Info("Added stroke");
-                            // sync ALL users
-                            // TODO: look into zero-copy for this
-                            _hubHandler.AddPointToConnectedStroke(_sessionId, add.Id, add.Point);
-                            break;
-                        }
-                    case CreateConnectedStroke create:
-                        {
-                            _connectedStrokes.Add(create.ConnectedStroke);
-                            _log.Info("Created Connected Stroke");
+            var addActions = actions.Where(a => a is AddPointToConnectedStroke).Select(a => (AddPointToConnectedStroke)a);
 
-                            _hubHandler.CreateNewConnectedStroke(_sessionId, create.ConnectedStroke);
-                            break;
-                        }
-                }
-            }
+            _log.Info("BATCHED {0} create actions and {1} add actions", createActions.Count(), addActions.Count());
+
+            createActions.ForEach(c => { c.Points = addActions.Where(a => a.Id == c.Id).Select(a => a.Point).ToList(); });
+
+            addActions = addActions.Where(a => !createActions.Any(c => a.Id == c.Id));
+
+            _hubHandler.PushConnectedStrokes(_sessionId, createActions.ToArray());
+            _connectedStrokes.AddRange(createActions);
+
+            addActions.GroupBy(a => a.Id).ForEach(add => {
+                _connectedStrokes.Where(c => c.Id == add.Key).First().Points.AddRange(add.Select(a => a.Point));
+
+                // sync ALL users
+                // TODO: look into zero-copy for this
+                _hubHandler.AddPointsToConnectedStroke(_sessionId, add.Key, add.Select(a => a.Point).ToArray());
+            });
         }
     }
 }

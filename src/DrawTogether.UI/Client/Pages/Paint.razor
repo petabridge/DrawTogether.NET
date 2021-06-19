@@ -59,9 +59,8 @@
             .WithUrl(_hubUrl)
             .Build();
 
-        _hubConnection.On<ConnectedStroke>("CreateConnectedStroke", CreateConnectedStroke);
         _hubConnection.On<ConnectedStroke[]>("AddConnectedStrokes", AddConnectedStrokes);
-        _hubConnection.On<Guid, Point>("AddPointToConnectedStroke", AddPointToConnectedStroke);
+        _hubConnection.On<Guid, Point[]>("AddPointsToConnectedStroke", AddPointsToConnectedStroke);
         _hubConnection.On<string>("AddUser", AddUser);
 
         await _hubConnection.StartAsync();
@@ -94,14 +93,6 @@
         _hubConnection.SendAsync("AddPointToConnectedStroke", SessionId, Id, point);
     }
 
-    private void CreateConnectedStroke(ConnectedStroke connectedStroke)
-    {
-        ConnectedStrokes.Add(connectedStroke);
-
-        // Inform blazor the UI needs updating
-        StateHasChanged();
-    }
-
     private void AddConnectedStrokes(ConnectedStroke[] connectedStrokes)
     {
         ConnectedStrokes.AddRange(connectedStrokes);
@@ -110,9 +101,9 @@
         StateHasChanged();
     }
 
-    private void AddPointToConnectedStroke(Guid id, Point point)
+    private void AddPointsToConnectedStroke(Guid id, Point[] points)
     {
-        ConnectedStrokes.Where(s => s.Id == id).First().Points.Add(point);
+        ConnectedStrokes.Where(s => s.Id == id).First().Points.AddRange(points);
         StateHasChanged();
     }
 

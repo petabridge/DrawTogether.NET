@@ -59,7 +59,7 @@ namespace DrawTogether.UI.Shared.Connectivity
 
             public string InstanceId { get; }
 
-            public ConnectedStroke ConnectedStroke { get; }
+            public ConnectedStroke ConnectedStroke { get; set; }
         }
 
         //public sealed class SubscribeToSession : IPaintSessionMessage
