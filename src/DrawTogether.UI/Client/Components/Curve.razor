@@ -15,7 +15,7 @@
 
     protected override bool ShouldRender()
     {
-        if (_points.Count() != Points.Count)
+        if (_points.Length != Points.Count)
         {
             _points = Points.ToArray();
             return true;
@@ -29,10 +29,10 @@
         double smoothness = 1.0 / 3.0;
 
         var result = "";
-        if (Points.Count() >= 2)
+        if (Points.Length >= 2)
         {
             result = $"M {Points[0].x} {Points[0].y} ";
-            for (int i = 1; i < Points.Count() - 1; i++)
+            for (int i = 1; i < Points.Length - 1; i++)
             {
                 result += $"S {Points[i - 1].x * smoothness / 2 + Points[i].x - Points[i + 1].x * smoothness / 2} {Points[i - 1].y * smoothness / 2 + Points[i].y - Points[i + 1].y * smoothness / 2} {Points[i].x} {Points[i].y} ";
             }
