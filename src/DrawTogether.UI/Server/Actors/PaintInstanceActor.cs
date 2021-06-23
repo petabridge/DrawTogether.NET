@@ -6,6 +6,7 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
+using Akka.Util.Internal;
 using DrawTogether.UI.Server.Hubs;
 using DrawTogether.UI.Server.Services;
 using DrawTogether.UI.Shared;
@@ -23,7 +24,7 @@ namespace DrawTogether.UI.Server.Actors
         // Handle to the Akka.NET asynchronous logging system
         private readonly ILoggingAdapter _log = Context.GetLogger();
 
-        private readonly List<StrokeData> _strokes = new();
+        private readonly List<ConnectedStroke> _connectedStrokes = new();
         private readonly List<string> _users = new();
         private readonly IDrawHubHandler _hubHandler;
         private readonly string _sessionId;
@@ -41,38 +42,31 @@ namespace DrawTogether.UI.Server.Actors
             switch (message)
             {
                 case JoinPaintSession join:
-                {
-                    _log.Debug("User [{0}] joined [{1}]", join.ConnectionId, join.InstanceId);
-                    // need to make immutable copy of stroke data and pass it along
-                    var strokeCopy = _strokes.ToArray();
-                   
-
-                    // sync a single user.
-                    _hubHandler.PushStrokes(join.ConnectionId, _sessionId, strokeCopy);
-                    _hubHandler.AddUsers(join.ConnectionId, _users.ToArray());
-
-                     // let all users know about the new user
-                     _users.Add(join.UserId);
-                     _hubHandler.AddUser(_sessionId, join.UserId);
-                    break;
-                }
-                case AddStrokes add:
-                {
-                    _strokes.AddRange(add.Strokes);
-                    //_log.Info("Added {0} strokes", add.Strokes.Count);
-                    // sync ALL users
-                    foreach (var s in add.Strokes)
                     {
-                        _streamsDebouncer.Tell(s);
+                        _log.Debug("User [{0}] joined [{1}]", join.ConnectionId, join.InstanceId);
+                        // need to make immutable copy of stroke data and pass it along
+                        var strokeCopy = _connectedStrokes.ToArray();
+
+                        // sync a single user.
+                        _hubHandler.PushConnectedStrokes(join.ConnectionId, _sessionId, strokeCopy);
+                        _hubHandler.AddUsers(join.ConnectionId, _users.ToArray());
+
+                        // let all users know about the new user
+                        _users.Add(join.UserId);
+                        _hubHandler.AddUser(_sessionId, join.UserId);
+                        break;
                     }
-                    break;
-                }
+                case AddPointToConnectedStroke or CreateConnectedStroke:
+                    {
+                        _streamsDebouncer.Tell(message);
+                        break;
+                    }
                 case ReceiveTimeout _:
-                {
-                    _log.Info("Terminated Painting Session [{0}] after [{1}]", _sessionId, _idleTimeout);
-                    Context.Stop(Self);
-                    break;
-                }
+                    {
+                        _log.Info("Terminated Painting Session [{0}] after [{1}]", _sessionId, _idleTimeout);
+                        Context.Stop(Self);
+                        break;
+                    }
                 default:
                     Unhandled(message);
                     break;
@@ -84,21 +78,38 @@ namespace DrawTogether.UI.Server.Actors
             _log.Info("Started drawing session [{0}]", _sessionId);
 
             var materializer = Context.Materializer();
-            var (sourceRef, source) = Source.ActorRef<StrokeData>(1000, OverflowStrategy.DropHead)
+            var (sourceRef, source) = Source.ActorRef<IPaintSessionMessage>(1000, OverflowStrategy.DropHead)
                 .PreMaterialize(materializer);
 
             _streamsDebouncer = sourceRef;
-            source.GroupedWithin(10, TimeSpan.FromMilliseconds(75)).RunForeach(TransmitStrokes, materializer);
+            source.GroupedWithin(10, TimeSpan.FromMilliseconds(75)).RunForeach(TransmitActions, materializer);
 
             // idle timeout all drawings after 20 minutes
             Context.SetReceiveTimeout(_idleTimeout);
         }
 
-        private void TransmitStrokes(IEnumerable<StrokeData> strokes)
+        private void TransmitActions(IEnumerable<IPaintSessionMessage> actions)
         {
-            var s = strokes.ToArray();
-            _log.Info("BATCHED {0} strokes", s.Length);
-            _hubHandler.PushStrokes(_sessionId, s);
+            var createActions = actions.Where(a => a is CreateConnectedStroke).Select(a => ((CreateConnectedStroke)a).ConnectedStroke);
+
+            var addActions = actions.Where(a => a is AddPointToConnectedStroke).Select(a => (AddPointToConnectedStroke)a);
+
+            _log.Info("BATCHED {0} create actions and {1} add actions", createActions.Count(), addActions.Count());
+
+            createActions.ForEach(c => { c.Points = addActions.Where(a => a.Id == c.Id).Select(a => a.Point).ToList(); });
+
+            addActions = addActions.Where(a => !createActions.Any(c => a.Id == c.Id));
+
+            _hubHandler.PushConnectedStrokes(_sessionId, createActions.ToArray());
+            _connectedStrokes.AddRange(createActions);
+
+            addActions.GroupBy(a => a.Id).ForEach(add => {
+                _connectedStrokes.Where(c => c.Id == add.Key).First().Points.AddRange(add.Select(a => a.Point));
+
+                // sync ALL users
+                // TODO: look into zero-copy for this
+                _hubHandler.AddPointsToConnectedStroke(_sessionId, add.Key, add.Select(a => a.Point).ToArray());
+            });
         }
     }
 }

@@ -36,9 +36,14 @@ namespace DrawTogether.UI.Server.Hubs
             _sessionHandler.Handle(new PaintSessionProtocol.JoinPaintSession(sessionId, Context.ConnectionId, Context.UserIdentifier ?? "BadUser"));
         }
 
-        public void AddStrokes(string sessionId, StrokeData[] strokes)
+        public void CreateConnectedStroke(string sessionId, ConnectedStroke connectedStroke)
         {
-            _sessionHandler.Handle(new PaintSessionProtocol.AddStrokes(sessionId, strokes));
+            _sessionHandler.Handle(new PaintSessionProtocol.CreateConnectedStroke(sessionId, connectedStroke));
+        }
+
+        public void AddPointToConnectedStroke(string sessionId, Guid id, Point point)
+        {
+            _sessionHandler.Handle(new PaintSessionProtocol.AddPointToConnectedStroke(sessionId, id, point));
         }
 
         public override Task OnConnectedAsync()

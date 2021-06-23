@@ -10,13 +10,13 @@
 <ColorPicker ColorValueChanged="UpdateColor"></ColorPicker>
 <CursorPicker CursorSizeChanged="UpdateCursorSize"></CursorPicker>
 
-<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;" 
-         @onmousemove="MoveCursor" onmousedown="" onmouseup="">
-    <svg width="900" height="500" >
-        <Circle radius="@CursorSize" cursorId="user" cX="@cX" cY="@cY" fillColor="@Color" borderColor="@Color" />
-        @foreach (var c in ClientStrokes)
+<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
+         @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
+    <svg width="900" height="500">
+        <Circle radius="@CursorSize" cursorId="user" cX="@cX" cY="@cY" fillColor="@Color" borderColor="@Color"/>
+        @foreach (var connectedStroke in RenderStrokes.Values)
         {
-            <Circle radius="@c.cursorSize" cX="@c.cX" cY="@c.cY" fillColor="@c.color" borderColor="@c.color" />
+            <Curve Points="@connectedStroke.Points" Stroke="@connectedStroke.Stroke" StrokeWidth="@connectedStroke.StrokeWidth"/>
         }
     </svg>
 </section>
@@ -37,10 +37,12 @@
 <button id="reset" @onclick="ResetScreen">Clear Screen</button>
 
 @code {
+
     [Parameter]
     public string SessionId { get; set; }
 
-    List<StrokeData> ClientStrokes = new List<StrokeData>();
+    Dictionary<Guid, ConnectedStroke> RenderStrokes = new();
+
     HashSet<string> Users = new HashSet<string>();
 
     private string _hubUrl;
@@ -48,7 +50,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Create the chat client
+    // Create the chat client
         var baseUrl = navigationManager.BaseUri;
 
         _hubUrl = navigationManager.BaseUri.TrimEnd('/') + DrawHubConstants.HubUri;
@@ -59,7 +61,8 @@
             .WithUrl(_hubUrl)
             .Build();
 
-        _hubConnection.On<StrokeData[]>("DrawStrokes", DrawStrokes);
+        _hubConnection.On<ConnectedStroke[]>("AddConnectedStrokes", AddConnectedStrokes);
+        _hubConnection.On<Guid, Point[]>("AddPointsToConnectedStroke", AddPointsToConnectedStroke);
         _hubConnection.On<string>("AddUser", AddUser);
 
         await _hubConnection.StartAsync();
@@ -69,17 +72,25 @@
         await base.OnInitializedAsync();
     }
 
-    private void OnNext(IEnumerable<StrokeData> obj)
+    private void OnNext(Guid Id, Point point)
     {
-        _hubConnection.SendAsync("AddStrokes", SessionId, obj.ToArray());
+        _hubConnection.SendAsync("AddPointToConnectedStroke", SessionId, Id, point);
     }
 
-    private void DrawStrokes(StrokeData[] strokes)
+    private void AddConnectedStrokes(ConnectedStroke[] connectedStrokes)
     {
-        ClientStrokes.AddRange(strokes);
+        foreach (var c in connectedStrokes)
+        {
+            RenderStrokes[c.Id] = c;
+        }
+    }
 
-        // Inform blazor the UI needs updating
-        StateHasChanged();
+    private void AddPointsToConnectedStroke(Guid id, Point[] points)
+    {
+        if (RenderStrokes.ContainsKey(id))
+        {
+            RenderStrokes[id].Points.AddRange(points);
+        }
     }
 
     private void AddUser(string userName)
@@ -100,19 +111,38 @@
     private string mousePointerMessage = "foo";
     private string blazorHubDebugMessage = "bar";
     private string Color = "black";
-    private IDisposable OutboundStrokes { get; set; }
     private int CursorSize = 8;
 
-    private void MoveCursor(MouseEventArgs e)
+    private Guid CurrentStrokeId { get; set; }
+
+    private void CursorDown(MouseEventArgs e)
     {
-        //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
-        cX = e.OffsetX;
-        cY = e.OffsetY;
-        mousePointerMessage = $"Moving circle to {cX},{cY} [button pressed? {e.Buttons}]";
+        CurrentStrokeId = Guid.NewGuid();
+        var newStroke = new ConnectedStroke() {Id = CurrentStrokeId, Stroke = Color, StrokeWidth = CursorSize};
+        _hubConnection.SendAsync("CreateConnectedStroke", SessionId, newStroke);
         if (e.Buttons == 1)
         {
-            var newStroke = new StrokeData() {cursorSize = CursorSize, cX = e.OffsetX, cY = e.OffsetY, color = Color};
-            OnNext(new []{ newStroke });
+            OnNext(CurrentStrokeId, new Point(e.OffsetX, e.OffsetY));
+        }
+    }
+
+    private void CursorMove(MouseEventArgs e)
+    {
+    //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
+        cX = e.OffsetX;
+        cY = e.OffsetY;
+        mousePointerMessage = $"Moving circle to {e.OffsetX},{e.OffsetY} [button pressed? {e.Buttons}]";
+        if (e.Buttons == 1)
+        {
+            OnNext(CurrentStrokeId, new Point(e.OffsetX, e.OffsetY));
+        }
+    }
+
+    private void CursorUp(MouseEventArgs e)
+    {
+        if (e.Buttons == 1)
+        {
+            OnNext(CurrentStrokeId, new Point(e.OffsetX, e.OffsetY));
         }
     }
 
@@ -128,12 +158,12 @@
 
     private void ResetScreen()
     {
-        //strokes.Clear();
+    //strokes.Clear();
     }
 
     public void Dispose()
     {
         _hubConnection.DisposeAsync();
-        OutboundStrokes.Dispose();
     }
+
 }
