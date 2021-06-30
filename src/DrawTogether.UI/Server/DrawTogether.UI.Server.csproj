@@ -19,5 +19,10 @@
     <Folder Include="Controllers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Shared\MainLayout.razor.css" />
+    <Content Include="Shared\NavMenu.razor.css" />
+  </ItemGroup>
+
 
 </Project>

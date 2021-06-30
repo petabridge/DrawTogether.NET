@@ -5,8 +5,6 @@ VisualStudioVersion = 16.6.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DrawTogether.UI.Server", "src\DrawTogether.UI\Server\DrawTogether.UI.Server.csproj", "{0357B9DF-91B5-4B57-9E19-68B64D257FAE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DrawTogether.UI.Client", "src\DrawTogether.UI\Client\DrawTogether.UI.Client.csproj", "{522E5EDC-B780-46E3-866A-AAC240CF636D}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DrawTogether.UI.Shared", "src\DrawTogether.UI\Shared\DrawTogether.UI.Shared.csproj", "{308A77AD-9D61-4D4A-B003-CF59B0BCE1A6}"
 EndProject
 Global
@@ -31,18 +29,6 @@ Global
 		{0357B9DF-91B5-4B57-9E19-68B64D257FAE}.Release|x64.Build.0 = Release|Any CPU
 		{0357B9DF-91B5-4B57-9E19-68B64D257FAE}.Release|x86.ActiveCfg = Release|Any CPU
 		{0357B9DF-91B5-4B57-9E19-68B64D257FAE}.Release|x86.Build.0 = Release|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Debug|x64.Build.0 = Debug|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Debug|x86.Build.0 = Debug|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Release|x64.ActiveCfg = Release|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Release|x64.Build.0 = Release|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Release|x86.ActiveCfg = Release|Any CPU
-		{522E5EDC-B780-46E3-866A-AAC240CF636D}.Release|x86.Build.0 = Release|Any CPU
 		{308A77AD-9D61-4D4A-B003-CF59B0BCE1A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{308A77AD-9D61-4D4A-B003-CF59B0BCE1A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{308A77AD-9D61-4D4A-B003-CF59B0BCE1A6}.Debug|x64.ActiveCfg = Debug|Any CPU
