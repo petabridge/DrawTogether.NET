@@ -57,6 +57,8 @@ namespace DrawTogether.UI.Server
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
@@ -64,7 +66,7 @@ namespace DrawTogether.UI.Server
                 endpoints.MapHub<DrawHub>(DrawHubConstants.HubUri);
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
-                endpoints.MapFallbackToFile("index.html");
+                endpoints.MapFallbackToPage("/_Host");
             });
         }
     }
