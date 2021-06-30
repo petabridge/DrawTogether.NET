@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace DrawTogether.UI.Client.Services
+namespace DrawTogether.UI.Server.Services
 {
     public interface IPaintSessionGenerator
     {

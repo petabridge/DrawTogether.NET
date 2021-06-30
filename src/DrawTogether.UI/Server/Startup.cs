@@ -27,6 +27,7 @@ namespace DrawTogether.UI.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<IPaintSessionGenerator, GuidPaintSessionGenerator>();
             services.AddSingleton<IUserIdProvider, RandomNameService>();
             services.AddAkka();
             services.AddTransient<IDrawHubHandler, DrawHubHandler>();
@@ -56,6 +57,8 @@ namespace DrawTogether.UI.Server
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
@@ -63,7 +66,7 @@ namespace DrawTogether.UI.Server
                 endpoints.MapHub<DrawHub>(DrawHubConstants.HubUri);
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
-                endpoints.MapFallbackToFile("index.html");
+                endpoints.MapFallbackToPage("/_Host");
             });
         }
     }
