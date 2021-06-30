@@ -1,0 +1,28 @@
+using System;
+using DrawTogether.UI.Server.Areas.Identity.Data;
+using DrawTogether.UI.Server.Areas.Identity.Data.DrawTogether.UI;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+[assembly: HostingStartup(typeof(DrawTogether.UI.Server.Areas.Identity.IdentityHostingStartup))]
+namespace DrawTogether.UI.Server.Areas.Identity
+{
+    public class IdentityHostingStartup : IHostingStartup
+    {
+        public void Configure(IWebHostBuilder builder)
+        {
+            builder.ConfigureServices((context, services) => {
+                services.AddDbContext<DTServerContext>(options =>
+                    options.UseSqlite(
+                        context.Configuration.GetConnectionString("DTServerContextConnection")));
+
+                services.AddDefaultIdentity<ServerUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                    .AddEntityFrameworkStores<DTServerContext>();
+            });
+        }
+    }
+}
