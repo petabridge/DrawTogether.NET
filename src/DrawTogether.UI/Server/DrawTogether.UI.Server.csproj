@@ -8,10 +8,10 @@
     <PackageReference Include="Akka.DependencyInjection" Version="1.4.20" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="5.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.7" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Client\DrawTogether.UI.Client.csproj" />
     <ProjectReference Include="..\Shared\DrawTogether.UI.Shared.csproj" />
   </ItemGroup>
 
