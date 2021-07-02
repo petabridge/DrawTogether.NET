@@ -7,9 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Linq;
 using DrawTogether.UI.Server.Hubs;
+using DrawTogether.UI.Server.Identity;
 using DrawTogether.UI.Server.Services;
 using DrawTogether.UI.Server.Services.Users;
 using DrawTogether.UI.Shared;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DrawTogether.UI.Server
@@ -36,7 +38,13 @@ namespace DrawTogether.UI.Server
             services.AddControllersWithViews();
             services.AddRazorPages();
             
-           // services.AddIdentity<>()
+           
+            // Add identity types
+            services.AddIdentity<DTAnonymousUser, DTAnonymousRole>();
+
+            // Identity Services
+            services.AddSingleton<IUserStore<DTAnonymousUser>, AkkaUserStore>();
+            services.AddTransient<IRoleStore<DTAnonymousRole>, AkkaUserStore>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

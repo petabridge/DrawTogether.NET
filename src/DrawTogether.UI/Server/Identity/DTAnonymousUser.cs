@@ -15,4 +15,9 @@ namespace DrawTogether.UI.Server.Identity
                    user.Id.Equals(IdentityProtocol.DeletedUser.UserId);
         }
     }
+
+    public class DTAnonymousRole : IdentityRole
+    {
+        
+    }
 }

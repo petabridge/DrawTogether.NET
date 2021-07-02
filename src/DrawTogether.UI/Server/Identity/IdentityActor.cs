@@ -14,11 +14,13 @@ namespace DrawTogether.UI.Server.Identity
     public sealed class IdentityActor : ReceivePersistentActor
     {
         private readonly ILoggingAdapter _log = Context.GetLogger();
+        private readonly HashSet<IActorRef> _identityIndexUpdates = new HashSet<IActorRef>();
         
-        public IdentityActor(string userId)
+        public IdentityActor(string userId, IActorRef subscriber)
         {
             UserId = userId;
-            
+            _identityIndexUpdates.Add(subscriber);
+
             Recover<UserChangedEvent>(changed =>
             {
                 switch (changed.Msg)
@@ -38,6 +40,11 @@ namespace DrawTogether.UI.Server.Identity
             });
 
             Command<GetUserInfo>(info =>
+            {
+                Sender.Tell(User);
+            });
+            
+            Command<GetUserByName>(info =>
             {
                 Sender.Tell(User);
             });
@@ -62,8 +69,20 @@ namespace DrawTogether.UI.Server.Identity
                 Persist(userChangedRecord, e =>
                 {
                     _log.Info(userChangedRecord.LoggedChanged);
+                    
+                    // special case - need to check if username was changed
+                    var boolUserNameChanged = _userInfo.UserName != newUser.UserName;
+                    
                     _userInfo = newUser;
                     Sender.Tell(IdentityResult.Success);
+
+                    if (boolUserNameChanged)
+                    {
+                        foreach (var sub in _identityIndexUpdates)
+                        {
+                            sub.Tell(_userInfo);
+                        }
+                    }
                 });
             });
 
@@ -84,6 +103,11 @@ namespace DrawTogether.UI.Server.Identity
                     _userInfo = DeletedUser;
                     Sender.Tell(IdentityResult.Success);
                 });
+            });
+            
+            Command<ReceiveTimeout>(t =>
+            {
+                Context.Stop(Self);
             });
         }
 
@@ -122,5 +146,24 @@ namespace DrawTogether.UI.Server.Identity
         public DTAnonymousUser User => _userInfo.ToAnonUser();
 
         public override string PersistenceId => UserId;
+
+        protected override void PreStart()
+        {
+            Context.SetReceiveTimeout(TimeSpan.FromMinutes(20));
+        }
+
+        protected override void OnReplaySuccess()
+        {
+            if (!string.IsNullOrEmpty(_userInfo.UserName))
+            {
+                foreach (var sub in _identityIndexUpdates)
+                {
+                    // LET SUBSCRIBERS KNOW ABOUT OUR INITIAL STATE
+                    sub.Tell(_userInfo);
+                }
+            }
+           
+            base.OnReplaySuccess();
+        }
     }
 }
