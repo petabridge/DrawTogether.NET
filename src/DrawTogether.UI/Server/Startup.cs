@@ -35,6 +35,8 @@ namespace DrawTogether.UI.Server
             services.AddServerSideBlazor();
             services.AddControllersWithViews();
             services.AddRazorPages();
+            
+           // services.AddIdentity<>()
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
