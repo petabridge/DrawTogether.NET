@@ -1,101 +1,125 @@
 ﻿#nullable enable
+using System;
+using System.Collections.Generic;
 using Akka.Actor;
+using Akka.Event;
 using Akka.Persistence;
+using Microsoft.AspNetCore.Identity;
+using static DrawTogether.UI.Server.Identity.IdentityProtocol;
 
 namespace DrawTogether.UI.Server.Identity
 {
-    /// <summary>
-    /// DEFINES IDENTITY CRUD PROTOCOL
-    /// </summary>
-    public static class IdentityProtocol
-    {
-        public interface IWithUserIdentity
-        {
-            string UserId { get; }
-        }
-
-        public interface IWithUserNameOnly
-        {
-            string UserName { get; }
-        }
-
-        public record UserInfo(string UserId, string? UserName = null, string? Email = null,
-            bool? EmailConfirmed = null)
-        {
-            public string UserId { get; } = UserId;
-        }
-
-        /// <summary>
-        /// Special case that indicates that this user was not found.
-        /// </summary>
-        public static readonly UserInfo NoUser = new UserInfo(string.Empty);
-
-        public static bool IsNobody(this UserInfo user)
-        {
-            return user == NoUser;
-        }
-
-        /// <summary>
-        /// Creates or updates user properties
-        /// </summary>
-        public sealed class UpdateUser : IWithUserIdentity
-        {
-            public UpdateUser(UserInfo updatedInfo)
-            {
-                UpdatedInfo = updatedInfo;
-            }
-
-            private UserInfo UpdatedInfo { get; }
-
-
-            public string UserId => UpdatedInfo.UserId;
-        }
-
-        /// <summary>
-        /// Soft-deletes a user from our system
-        /// </summary>
-        public sealed class DeleteUser : IWithUserIdentity
-        {
-            public DeleteUser(string userId)
-            {
-                UserId = userId;
-            }
-
-            public string UserId { get; }
-        }
-
-        /// <summary>
-        /// Should return a <see cref="UserInfo"/> object if the user is found.
-        /// </summary>
-        public sealed class GetUserInfo : IWithUserIdentity
-        {
-            public GetUserInfo(string userId)
-            {
-                UserId = userId;
-            }
-
-            public string UserId { get; }
-        }
-
-        public sealed class GetUserByName : IWithUserNameOnly
-        {
-            public GetUserByName(string userName)
-            {
-                UserName = userName;
-            }
-
-            public string UserName { get; }
-        }
-    }
+    public record UserChangedEvent(IWithUserIdentity Msg, bool Changed, string LoggedChanged);
     
     public sealed class IdentityActor : ReceivePersistentActor
     {
+        private readonly ILoggingAdapter _log = Context.GetLogger();
+        
         public IdentityActor(string userId)
         {
             UserId = userId;
+            
+            Recover<UserChangedEvent>(changed =>
+            {
+                switch (changed.Msg)
+                {
+                    case DeleteUser _:
+                    {
+                        _userInfo = DeletedUser;
+                        break;
+                    }
+                    case UpdateUser update:
+                    {
+                        var (changes, model) = DiffUserChanged(_userInfo, update);
+                        _userInfo = model;
+                        break;
+                    }
+                }
+            });
+
+            Command<GetUserInfo>(info =>
+            {
+                Sender.Tell(User);
+            });
+            
+            Command<UpdateUser>(userUpdate =>
+            {
+                if (_userInfo.IsDeleted())
+                {
+                    var str = $"Attempted to update deleted user [{UserId}] - change not allowed";
+                    _log.Error(str);
+                    Sender.Tell(IdentityResult.Failed(new IdentityError(){ Code = "BADDEVELOPER", Description = str}));
+                }
+                
+                var (userChangedRecord, newUser) = DiffUserChanged(_userInfo, userUpdate);
+                if (!userChangedRecord.Changed)
+                {
+                    _log.Debug("Processed no-op change for user [{0}]", UserId);
+                    Sender.Tell(IdentityResult.Success);
+                    return;
+                }
+                
+                Persist(userChangedRecord, e =>
+                {
+                    _log.Info(userChangedRecord.LoggedChanged);
+                    _userInfo = newUser;
+                    Sender.Tell(IdentityResult.Success);
+                });
+            });
+
+            Command<DeleteUser>(del =>
+            {
+                if (_userInfo.IsDeleted())
+                {
+                    _log.Debug("Attempted to deleted already deleted user [{0}]", UserId);
+                    Sender.Tell(IdentityResult.Success);
+                    return;
+                }
+                
+                var userChangedEvent = new UserChangedEvent(del, true, $"[{DateTime.UtcNow}] deleted user [{UserId}]")
+                
+                Persist(del, user =>
+                {
+                    _log.Info("Successfully deleted user [{0}]", UserId);
+                    _userInfo = DeletedUser;
+                    Sender.Tell(IdentityResult.Success);
+                });
+            });
+        }
+
+        private static (UserChangedEvent userChanged, UserInfo model) DiffUserChanged(UserInfo start,
+            UpdateUser changed)
+        {
+            var updatedProperties = new List<string>();
+
+            var info = changed.UpdatedInfo;
+            if (info.UserName != null && (start.UserName == null || !start.UserName.Equals(info.UserName)))
+            {
+                updatedProperties.Add($"[{DateTime.UtcNow}] Updated username from [{start.UserName}] to [{info.UserName}]");
+                start = start with {UserName = info.UserName};
+            }
+            
+            if (info.Email != null && (start.Email == null || !start.Email.Equals(info.Email)))
+            {
+                updatedProperties.Add($"[{DateTime.UtcNow}] Updated email from [{start.Email}] to [{info.Email}]");
+                start = start with {Email = info.Email};
+            }
+            
+            if (info.EmailConfirmed != null && (start.EmailConfirmed == null || !start.EmailConfirmed.Equals(info.EmailConfirmed)))
+            {
+                updatedProperties.Add($"[{DateTime.UtcNow}] Updated email confirmed from [{start.EmailConfirmed}] to [{info.EmailConfirmed}]");
+                start = start with {EmailConfirmed = info.EmailConfirmed};
+            }
+
+            return (
+                new UserChangedEvent(changed, updatedProperties.Count > 0,
+                    string.Join(Environment.NewLine, updatedProperties)), start);
         }
         
         public string UserId { get; }
+        private IdentityProtocol.UserInfo _userInfo = IdentityProtocol.NoUser;
+
+        public DTAnonymousUser User => _userInfo.ToAnonUser();
 
         public override string PersistenceId => UserId;
     }
