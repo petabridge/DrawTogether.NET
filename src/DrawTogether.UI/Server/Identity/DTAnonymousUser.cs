@@ -4,7 +4,7 @@ namespace DrawTogether.UI.Server.Identity
 {
     public class DTAnonymousUser : IdentityUser
     {
-        
+
     }
 
     public static class DTAnonymousUserExtensions

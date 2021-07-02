@@ -47,8 +47,10 @@ namespace DrawTogether.UI.Server.Identity
             return new DTAnonymousUser()
             {
                 Id = user.UserId, Email = user.Email,
+                NormalizedEmail = user.Email,
                 EmailConfirmed = user.EmailConfirmed ?? false,
                 UserName = user.UserName,
+                NormalizedUserName = user.UserName,
             };
         }
 
