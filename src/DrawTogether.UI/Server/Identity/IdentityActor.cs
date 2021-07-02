@@ -75,8 +75,8 @@ namespace DrawTogether.UI.Server.Identity
                     Sender.Tell(IdentityResult.Success);
                     return;
                 }
-                
-                var userChangedEvent = new UserChangedEvent(del, true, $"[{DateTime.UtcNow}] deleted user [{UserId}]")
+
+                var userChangedEvent = new UserChangedEvent(del, true, $"[{DateTime.UtcNow}] deleted user [{UserId}]");
                 
                 Persist(del, user =>
                 {
