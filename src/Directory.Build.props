@@ -27,6 +27,7 @@
     <JaegerVersion>1.0.0</JaegerVersion>
   </PropertyGroup>
   <PropertyGroup>
+    <Nullable>false</Nullable>
     <NetVersion>net5.0</NetVersion>
   </PropertyGroup>
 </Project>
