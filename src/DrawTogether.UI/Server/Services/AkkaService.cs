@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.DependencyInjection;
 using DrawTogether.UI.Server.Actors;
+using DrawTogether.UI.Server.Identity;
 using DrawTogether.UI.Shared.Connectivity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,6 +26,7 @@ namespace DrawTogether.UI.Server.Services
         {
             // creates an instance of the ISignalRProcessor that can be handled by SignalR
             services.AddSingleton<IDrawSessionHandler, AkkaService>();
+            services.AddSingleton<IIdentityActorService, AkkaService>();
 
             // starts the IHostedService, which creates the ActorSystem and actors
             services.AddHostedService<AkkaService>(sp => (AkkaService)sp.GetRequiredService<IDrawSessionHandler>());
@@ -35,7 +37,7 @@ namespace DrawTogether.UI.Server.Services
     /// Runs in the background of Server process. Hosts <see cref="ActorSystem"/> responsible for powering
     /// actors that track session state data.
     /// </summary>
-    public sealed class AkkaService : IHostedService, IDrawSessionHandler
+    public sealed class AkkaService : IHostedService, IDrawSessionHandler, IIdentityActorService
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IHostApplicationLifetime _applicationLifetime;
@@ -61,6 +63,7 @@ namespace DrawTogether.UI.Server.Services
 
             _system = ActorSystem.Create("PaintSys", actorSystemSetup);
             _paintManager = _system.ActorOf(Props.Create(() => new PaintInstanceManager()), "paint");
+            IdentityActor = _system.ActorOf(Props.Create(() => new IdentityMaster()), "identity");
 
             // mutually assured destruction
             _system.WhenTerminated.ContinueWith(tr =>
@@ -81,5 +84,7 @@ namespace DrawTogether.UI.Server.Services
         {
             _paintManager.Tell(msg);
         }
+
+        public IActorRef IdentityActor { get; private set; }
     }
 }
