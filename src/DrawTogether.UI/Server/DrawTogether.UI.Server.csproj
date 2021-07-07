@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.7" />
     <PackageReference Include="Microsoft.IdentityModel" Version="7.0.0" />
+    <PackageReference Include="Blazored.LocalStorage" Version="2.1.1" />
     <!--<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.11.1" />-->
   </ItemGroup>
 

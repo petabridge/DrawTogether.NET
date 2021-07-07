@@ -33,7 +33,7 @@ namespace DrawTogether.UI.Server.Controllers
     }
     
     [ApiController]
-    [Route("[controller]")]
+    [Route("/[controller]")]
     public class IdentityController : Controller
     {
         private readonly IUserStore<DTAnonymousUser> _userStore;
@@ -62,7 +62,11 @@ namespace DrawTogether.UI.Server.Controllers
                 var anonUser = await _userStore.CreateAsync(userInfo, cts.Token);
 
                 if (anonUser.Succeeded)
-                    return Ok();
+                    return Ok(new
+                    {
+                        Id = userInfo.Id,
+                        Username = userInfo.UserName,
+                    });
                 return BadRequest(new {message = string.Join(",", anonUser.Errors)});
             }
             catch (Exception ex)

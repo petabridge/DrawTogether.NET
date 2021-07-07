@@ -1,5 +1,16 @@
 @page "/"
 
-<h1>Hello, world!</h1>
+<AuthorizeView>
+    <Authorized>
+        <h1>Hello @context.User.FindFirst(ClaimTypes.Name)?.Value</h1>
+    </Authorized>
+</AuthorizeView>
 
-Welcome to your new app.
+@code{
+    protected override async Task OnInitializedAsync()
+    {
+
+        await base.OnInitializedAsync();
+    }
+
+}
