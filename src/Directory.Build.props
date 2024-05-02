@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Copyright>Copyright © 2015-2021 Petabridge</Copyright>
+    <Copyright>Copyright © 2015-2024 Petabridge</Copyright>
     <Authors>Petabridge</Authors>
     <VersionPrefix>0.2.2</VersionPrefix>
     <PackageReleaseNotes>Added footer that displays assembly version on Pricing UI</PackageReleaseNotes>
@@ -27,6 +27,6 @@
     <JaegerVersion>1.0.0</JaegerVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <NetVersion>net5.0</NetVersion>
+    <NetVersion>net8.0</NetVersion>
   </PropertyGroup>
 </Project>
