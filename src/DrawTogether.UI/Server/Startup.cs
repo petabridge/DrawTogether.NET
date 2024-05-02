@@ -29,9 +29,10 @@ namespace DrawTogether.UI.Server
         {
             services.AddSingleton<IPaintSessionGenerator, GuidPaintSessionGenerator>();
             services.AddSingleton<IUserIdProvider, RandomNameService>();
-            services.AddAkka();
+            services.AddDrawTogetherAkka();
             services.AddTransient<IDrawHubHandler, DrawHubHandler>();
-            services.AddSignalR().AddJsonProtocol();
+            services.AddSingleton<IDrawSessionHandler, DrawSessionHandler>();
+            services.AddSignalR();
             services.AddServerSideBlazor();
             services.AddControllersWithViews();
             services.AddRazorPages();

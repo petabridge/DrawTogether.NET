@@ -1,5 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Akka.Actor;
+using Akka.Hosting;
+using DrawTogether.UI.Server.Actors;
 using static DrawTogether.UI.Shared.Connectivity.PaintSessionProtocol;
 
 namespace DrawTogether.UI.Server.Services
@@ -10,5 +13,20 @@ namespace DrawTogether.UI.Server.Services
     public interface IDrawSessionHandler
     {
         void Handle(IPaintSessionMessage msg);
+    }
+
+    public sealed class DrawSessionHandler : IDrawSessionHandler
+    {
+        private readonly IActorRef _paintInstanceManager;
+
+        public DrawSessionHandler(IRequiredActor<PaintInstanceManager> paintInstanceManager)
+        {
+            _paintInstanceManager = paintInstanceManager.GetAsync().Result;
+        }
+
+        public void Handle(IPaintSessionMessage msg)
+        {
+            _paintInstanceManager.Tell(msg);
+        }
     }
 }
