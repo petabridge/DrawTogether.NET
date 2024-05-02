@@ -31,7 +31,7 @@ namespace DrawTogether.UI.Server
             services.AddSingleton<IUserIdProvider, RandomNameService>();
             services.AddAkka();
             services.AddTransient<IDrawHubHandler, DrawHubHandler>();
-            services.AddSignalR();
+            services.AddSignalR().AddJsonProtocol();
             services.AddServerSideBlazor();
             services.AddControllersWithViews();
             services.AddRazorPages();
@@ -43,7 +43,6 @@ namespace DrawTogether.UI.Server
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseWebAssemblyDebugging();
             }
             else
             {
@@ -53,7 +52,6 @@ namespace DrawTogether.UI.Server
             }
 
             app.UseHttpsRedirection();
-            app.UseBlazorFrameworkFiles();
             app.UseStaticFiles();
 
             app.UseRouting();

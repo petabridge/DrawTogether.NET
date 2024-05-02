@@ -14,8 +14,8 @@ namespace DrawTogether.UI.Server.Services
     {
         public string CreateNewSession()
         {
-            // will make the sessionId uri-friendly (and less ugly)
-            return Akka.Util.Base64Encoding.Base64Encode(Guid.NewGuid().ToString());
+            // return a base64 encoded GUID
+            return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         }
     }
 }
