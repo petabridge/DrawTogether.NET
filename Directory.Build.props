@@ -1,18 +1,18 @@
 <Project>
-  <PropertyGroup>
-    <Copyright>Copyright © 2015-2024 Petabridge</Copyright>
-    <Authors>Petabridge</Authors>
-    <VersionPrefix>0.2.2</VersionPrefix>
-    <PackageReleaseNotes>Added footer that displays assembly version on Pricing UI</PackageReleaseNotes>
-    <PackageIconUrl>
-    </PackageIconUrl>
-    <PackageProjectUrl>
-    </PackageProjectUrl>
-    <PackageLicenseUrl>
-    </PackageLicenseUrl>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup>
-    <NetVersion>net8.0</NetVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Copyright>Copyright © 2015-2024 Petabridge</Copyright>
+        <Authors>Petabridge</Authors>
+        <VersionPrefix>0.2.2</VersionPrefix>
+        <PackageReleaseNotes>Added footer that displays assembly version on Pricing UI</PackageReleaseNotes>
+        <PackageIconUrl>
+        </PackageIconUrl>
+        <PackageProjectUrl>
+        </PackageProjectUrl>
+        <PackageLicenseUrl>
+        </PackageLicenseUrl>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+    <PropertyGroup>
+        <NetVersion>net8.0</NetVersion>
+    </PropertyGroup>
 </Project>
