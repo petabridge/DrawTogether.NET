@@ -1,28 +1,21 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
+﻿using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 
-namespace DrawTogether.UI.Server.Services.Users
-{
-    public sealed class RandomNameService : IUserIdProvider
-    {
-        // DO NOT DO THIS IN PRODUCTION
-        private readonly ConcurrentDictionary<string, string> _connectionIdToNames =
-            new ConcurrentDictionary<string, string>();
+namespace DrawTogether.UI.Server.Services.Users;
 
-        public string? GetUserId(HubConnectionContext connection)
+public sealed class RandomNameService : IUserIdProvider
+{
+    // DO NOT DO THIS IN PRODUCTION
+    private readonly ConcurrentDictionary<string, string> _connectionIdToNames = new();
+
+    public string? GetUserId(HubConnectionContext connection)
+    {
+        if (_connectionIdToNames.ContainsKey(connection.ConnectionId))
         {
-            if (_connectionIdToNames.ContainsKey(connection.ConnectionId))
-                return _connectionIdToNames[connection.ConnectionId];
-            else
-            {
-                var name = _connectionIdToNames[connection.ConnectionId] = UserNamingService.GenerateRandomName();
-                return name;
-            }
+            return _connectionIdToNames[connection.ConnectionId];
         }
+
+        var name = _connectionIdToNames[connection.ConnectionId] = UserNamingService.GenerateRandomName();
+        return name;
     }
 }

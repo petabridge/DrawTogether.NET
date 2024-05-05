@@ -1,12 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace DefaultNamespace
+namespace DefaultNamespace;
+
+public class _Host : PageModel
 {
-    public class _Host : PageModel
+    public void OnGet()
     {
-        public void OnGet()
-        {
-            
-        }
     }
 }

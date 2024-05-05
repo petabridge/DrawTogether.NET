@@ -1,55 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using DrawTogether.UI.Server.Services;
-using DrawTogether.UI.Server.Services.Users;
+﻿using DrawTogether.UI.Server.Services;
 using DrawTogether.UI.Shared;
 using DrawTogether.UI.Shared.Connectivity;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
 
-namespace DrawTogether.UI.Server.Hubs
+namespace DrawTogether.UI.Server.Hubs;
+
+public sealed class DrawHub : Hub
 {
-    public sealed class DrawHub : Hub
+    private readonly ILogger<DrawHub> _log;
+    private readonly IDrawSessionHandler _sessionHandler;
+
+    public DrawHub(IDrawSessionHandler sessionHandler, ILogger<DrawHub> log)
     {
-        private readonly IDrawSessionHandler _sessionHandler;
-        private readonly ILogger<DrawHub> _log;
+        _sessionHandler = sessionHandler;
+        _log = log;
+    }
 
-        public DrawHub(IDrawSessionHandler sessionHandler, ILogger<DrawHub> log)
-        {
-            _sessionHandler = sessionHandler;
-            _log = log;
-        }
+    /// <summary>
+    ///     Connects this SignalR User to a paint session in progress.
+    /// </summary>
+    /// <param name="sessionId">The unique id of a specific paint session.</param>
+    public async Task JoinSession(string sessionId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
 
-        /// <summary>
-        /// Connects this SignalR User to a paint session in progress.
-        /// </summary>
-        /// <param name="sessionId">The unique id of a specific paint session.</param>
-        public async Task JoinSession(string sessionId)
-        {
+        // need to have some sort of service handle here for sending / retrieving state
+        _sessionHandler.Handle(new PaintSessionProtocol.JoinPaintSession(sessionId, Context.ConnectionId,
+            Context.UserIdentifier ?? "BadUser"));
+    }
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
+    public void CreateConnectedStroke(string sessionId, ConnectedStroke connectedStroke)
+    {
+        _sessionHandler.Handle(new PaintSessionProtocol.CreateConnectedStroke(sessionId, connectedStroke));
+    }
 
-            // need to have some sort of service handle here for sending / retrieving state
-            _sessionHandler.Handle(new PaintSessionProtocol.JoinPaintSession(sessionId, Context.ConnectionId, Context.UserIdentifier ?? "BadUser"));
-        }
+    public void AddPointToConnectedStroke(string sessionId, Guid id, Point point)
+    {
+        _sessionHandler.Handle(new PaintSessionProtocol.AddPointToConnectedStroke(sessionId, id, point));
+    }
 
-        public void CreateConnectedStroke(string sessionId, ConnectedStroke connectedStroke)
-        {
-            _sessionHandler.Handle(new PaintSessionProtocol.CreateConnectedStroke(sessionId, connectedStroke));
-        }
-
-        public void AddPointToConnectedStroke(string sessionId, Guid id, Point point)
-        {
-            _sessionHandler.Handle(new PaintSessionProtocol.AddPointToConnectedStroke(sessionId, id, point));
-        }
-
-        public override Task OnConnectedAsync()
-        {
-            _log.LogInformation("Received connection from [{0}->{1}]", Context.ConnectionId, Context.UserIdentifier);
-            return base.OnConnectedAsync();
-        }
+    public override Task OnConnectedAsync()
+    {
+        _log.LogInformation("Received connection from [{0}->{1}]", Context.ConnectionId, Context.UserIdentifier);
+        return base.OnConnectedAsync();
     }
 }

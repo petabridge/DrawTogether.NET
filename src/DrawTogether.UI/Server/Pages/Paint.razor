@@ -1,8 +1,8 @@
 @page "/paint/{sessionId}"
-@using DrawTogether.UI.Server.Components;
-@using DrawTogether.UI.Shared;
-@using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager navigationManager;
+@using DrawTogether.UI.Server.Components
+@using DrawTogether.UI.Shared
+@using Microsoft.AspNetCore.SignalR.Client
 @implements IDisposable;
 
 <h3>Paint!</h3>
@@ -38,19 +38,18 @@
 
 @code {
 
-    [Parameter]
-    public string SessionId { get; set; }
+    [Parameter] public string SessionId { get; set; }
 
-    Dictionary<Guid, ConnectedStroke> RenderStrokes = new();
+    readonly Dictionary<Guid, ConnectedStroke> RenderStrokes = new();
 
-    HashSet<string> Users = new HashSet<string>();
+    readonly HashSet<string> Users = new();
 
     private string _hubUrl;
     private HubConnection _hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-    // Create the chat client
+        // Create the chat client
         var baseUrl = navigationManager.BaseUri;
 
         _hubUrl = navigationManager.BaseUri.TrimEnd('/') + DrawHubConstants.HubUri;
@@ -118,7 +117,7 @@
     private void CursorDown(MouseEventArgs e)
     {
         CurrentStrokeId = Guid.NewGuid();
-        var newStroke = new ConnectedStroke() {Id = CurrentStrokeId, Stroke = Color, StrokeWidth = CursorSize};
+        var newStroke = new ConnectedStroke { Id = CurrentStrokeId, Stroke = Color, StrokeWidth = CursorSize };
         _hubConnection.SendAsync("CreateConnectedStroke", SessionId, newStroke);
         if (e.Buttons == 1)
         {
@@ -128,7 +127,7 @@
 
     private void CursorMove(MouseEventArgs e)
     {
-    //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
+        //mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
         cX = e.OffsetX;
         cY = e.OffsetY;
         mousePointerMessage = $"Moving circle to {e.OffsetX},{e.OffsetY} [button pressed? {e.Buttons}]";
@@ -158,7 +157,7 @@
 
     private void ResetScreen()
     {
-    //strokes.Clear();
+        //strokes.Clear();
     }
 
     public void Dispose()

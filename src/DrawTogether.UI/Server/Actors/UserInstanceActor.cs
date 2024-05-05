@@ -1,20 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Akka.Actor;
+﻿using Akka.Actor;
 
-namespace DrawTogether.UI.Server.Actors
+namespace DrawTogether.UI.Server.Actors;
+
+/// <summary>
+///     Gives a user a randomly-assigned name and associates that
+///     with their session on DrawTogether
+/// </summary>
+public class UserInstanceActor : UntypedActor
 {
-    /// <summary>
-    /// Gives a user a randomly-assigned name and associates that
-    /// with their session on DrawTogether
-    /// </summary>
-    public class UserInstanceActor : UntypedActor
+    protected override void OnReceive(object message)
     {
-        protected override void OnReceive(object message)
-        {
-            
-        }
     }
 }

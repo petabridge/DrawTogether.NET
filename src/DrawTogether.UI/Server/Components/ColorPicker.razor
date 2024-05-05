@@ -4,14 +4,12 @@
         Color
         <input @bind="CurrentColor"/>
     </label>
-    
+
     <button class="btn btn-primary" @onclick="@(async e => await ColorValueChanged.InvokeAsync(CurrentColor))">Set Color</button>
 </section>
 
 @code {
-    [Parameter]
-    public string CurrentColor { get; set; } = "#ff0000";
+    [Parameter] public string CurrentColor { get; set; } = "#ff0000";
 
-    [Parameter]
-    public EventCallback<string> ColorValueChanged { get; set; }
+    [Parameter] public EventCallback<string> ColorValueChanged { get; set; }
 }

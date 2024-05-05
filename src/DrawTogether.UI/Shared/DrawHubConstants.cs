@@ -4,10 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace DrawTogether.UI.Shared
+namespace DrawTogether.UI.Shared;
+
+public sealed class DrawHubConstants
 {
-    public sealed class DrawHubConstants
-    {
-        public const string HubUri = "/draw";
-    }
+    public const string HubUri = "/draw";
 }

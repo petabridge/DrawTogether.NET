@@ -6,15 +6,13 @@
             Cursor Size (px)
             <input @bind="CursorSize"/>
         </label>
-    
+
         <button class="btn btn-primary" @onclick="@(async e => await CursorSizeChanged.InvokeAsync(int.Parse(CursorSize)))">Set Cursor</button>
     </label>
 </section>
 
 @code {
-    [Parameter]
-    public string CursorSize { get; set; } = "8";
+    [Parameter] public string CursorSize { get; set; } = "8";
 
-    [Parameter]
-    public EventCallback<int> CursorSizeChanged { get; set; }
+    [Parameter] public EventCallback<int> CursorSizeChanged { get; set; }
 }
