@@ -1,7 +1,73 @@
 ﻿@page "/"
+@using Akka.Actor
+@using Akka.Hosting
+@using DrawTogether.Actors.Drawings
+@using DrawTogether.Entities.Drawings
+@inject IRequiredActor<AllDrawingsIndexActor> AllDrawingsIndexActor
+@inject ActorSystem ActorSystem
+@implements IAsyncDisposable
 
-<PageTitle>Home</PageTitle>
+<PageTitle>DrawTogether.NET</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Active Paint Sessions</h1>
+@if (_drawingActivities.Count == 0)
+{
+    // no active paint sessions right now, would you like to start one?
+    <div class="center">
+        <strong>No active sessions right now - would you like to make one?</strong>
+    </div>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>SessionId</th>
+            <th>Active Users</th>
+            <th>Last Updated</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var session in _drawingActivities)
+        {
+            <tr>
+                <td>@session.Key.SessionId</td>
+                <td>@session.Value.ActiveUsers</td>
+                <td>@session.Value.LastUpdate</td>
+                <td>Join Button</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
 
-Welcome to your new app.
+@code{
+    private Dictionary<DrawingSessionId, DrawingActivityUpdate> _drawingActivities = new();
+    private CancellationTokenSource _shutdownCts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1000));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, _shutdownCts.Token);
+        var allDrawingsActor = await AllDrawingsIndexActor.GetAsync(linkedCts.Token);
+
+        var currentState = await allDrawingsActor.Ask<IReadOnlyCollection<DrawingActivityUpdate>>(DrawingIndexQueries.GetAllActiveDrawingSessions.Instance, linkedCts.Token);
+
+        // populate the current table
+        foreach (var drawingActivity in currentState)
+        {
+            _drawingActivities[drawingActivity.DrawingSessionId] = drawingActivity;
+        }
+
+        await base.OnInitializedAsync();
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        await _shutdownCts.CancelAsync();
+        _shutdownCts.Dispose();
+        await ValueTask.CompletedTask;
+    }
+
+}
