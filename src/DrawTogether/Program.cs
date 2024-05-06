@@ -1,4 +1,3 @@
-using Akka.Hosting;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -7,9 +6,7 @@ using DrawTogether.Components.Account;
 using DrawTogether.Config;
 using DrawTogether.Data;
 using DrawTogether.Email;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// If you also want WebAssembly SSR, include this line:
 builder.Services.AddServerSideBlazor();
+
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
@@ -74,8 +73,8 @@ else
 }
 
 app.UseHttpsRedirection();
-app.MapBlazorHub();
 app.UseStaticFiles();
+app.UseResponseCompression();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
@@ -84,5 +83,4 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
-
 app.Run();
