@@ -1,4 +1,5 @@
-﻿using DrawTogether.Entities.Drawings.Messages;
+﻿using Akka.Actor;
+using DrawTogether.Entities.Drawings.Messages;
 
 namespace DrawTogether.Entities.Drawings;
 
@@ -18,15 +19,23 @@ public static class DrawingIndexQueries
         public static GetAllActiveDrawingSessions Instance { get; } = new();
     }
     
-    public sealed class SubscribeToDrawingSessionUpdates
+    public sealed class SubscribeToDrawingSessionUpdates 
     {
-        private SubscribeToDrawingSessionUpdates() { }
-        public static SubscribeToDrawingSessionUpdates Instance { get; } = new();
+        public SubscribeToDrawingSessionUpdates(IActorRef subscriber)
+        {
+            Subscriber = subscriber;
+        }
+
+        public IActorRef Subscriber { get; }
     }
     
     public sealed class UnsubscribeFromDrawingSessionUpdates
     {
-        private UnsubscribeFromDrawingSessionUpdates() { }
-        public static UnsubscribeFromDrawingSessionUpdates Instance { get; } = new();
+        public UnsubscribeFromDrawingSessionUpdates(IActorRef subscriber)
+        {
+            Subscriber = subscriber;
+        }
+
+        public IActorRef Subscriber { get; }
     }
 }

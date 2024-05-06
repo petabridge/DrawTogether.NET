@@ -1,6 +1,8 @@
 ﻿@page "/"
 @using Akka.Actor
 @using Akka.Hosting
+@using Akka.Streams
+@using Akka.Streams.Dsl
 @using DrawTogether.Actors.Drawings
 @using DrawTogether.Entities.Drawings
 @inject IRequiredActor<AllDrawingsIndexActor> AllDrawingsIndexActor
@@ -47,12 +49,13 @@ else
 @code{
     private readonly Dictionary<DrawingSessionId, DrawingActivityUpdate> _drawingActivities = new();
     private readonly CancellationTokenSource _shutdownCts = new();
+    private IActorRef? allDrawingsActor;
 
     protected override async Task OnInitializedAsync()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1000));
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, _shutdownCts.Token);
-        var allDrawingsActor = await AllDrawingsIndexActor.GetAsync(linkedCts.Token);
+        allDrawingsActor = await AllDrawingsIndexActor.GetAsync(linkedCts.Token);
 
         var currentState = await allDrawingsActor.Ask<IReadOnlyCollection<DrawingActivityUpdate>>(DrawingIndexQueries.GetAllActiveDrawingSessions.Instance, linkedCts.Token);
 
@@ -62,7 +65,31 @@ else
             _drawingActivities[drawingActivity.DrawingSessionId] = drawingActivity;
         }
 
-        await base.OnInitializedAsync();
+        // start the subscription
+        _ = RunSubscription();
+    }
+    
+    // create subscription
+    async Task RunSubscription()
+    {
+        var source = Source.ActorRef<DrawingActivityUpdate>(100, OverflowStrategy.DropHead);
+        var (srcActor, src) = source.PreMaterialize(ActorSystem);
+        
+        // starts the pump
+        allDrawingsActor.Tell(new DrawingIndexQueries.SubscribeToDrawingSessionUpdates(srcActor));
+
+        await foreach (var item in src.RunAsAsyncEnumerable(ActorSystem).WithCancellation(_shutdownCts.Token))
+        {
+            if (item.IsRemoved)
+            {
+                _drawingActivities.Remove(item.DrawingSessionId);
+            }
+            else
+            {
+                _drawingActivities[item.DrawingSessionId] = item;
+            }
+            StateHasChanged();
+        }
     }
     
     public async ValueTask DisposeAsync()

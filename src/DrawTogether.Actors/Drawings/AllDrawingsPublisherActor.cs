@@ -10,19 +10,31 @@ namespace DrawTogether.Actors.Drawings;
 /// Local actor responsible for publishing all drawing session updates
 /// to the <see cref="AllDrawingsIndexActor"/> for indexing
 /// </summary>
-public sealed class AllDrawingsPublisherActor : UntypedActor
+public sealed class AllDrawingsPublisherActor : UntypedActor, IWithTimers
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _replicator = DistributedData.Get(Context.System).Replicator;
     private readonly IWriteConsistency _writeConsistency = new WriteMajority(TimeSpan.FromSeconds(3));
 
     private readonly Cluster _cluster = Cluster.Get(Context.System);
+    
+        
+    public sealed class PruneRemovedDrawings : IDeadLetterSuppression, INoSerializationVerificationNeeded,
+        INotInfluenceReceiveTimeout
+    {
+        private PruneRemovedDrawings()
+        {
+        }
+
+        public static PruneRemovedDrawings Instance { get; } = new();
+    }
+
 
     protected override void OnReceive(object message)
     {
         switch (message)
         {
-            case DrawingActivityUpdate { IsRemoved: false } update:
+            case DrawingActivityUpdate update:
             {
                 _log.Debug("Publishing drawing update for session {DrawingSessionId}", update.DrawingSessionId);
                 var key = ClusterConstants.AllDrawingsIndexKey;
@@ -36,20 +48,21 @@ public sealed class AllDrawingsPublisherActor : UntypedActor
                 _replicator.Tell(updateOp);
                 break;
             }
-            case DrawingActivityUpdate { IsRemoved: true } update:
+            case PruneRemovedDrawings:
             {
-                _log.Debug("Removing drawing session {DrawingSessionId} from index", update.DrawingSessionId);
+                _log.Debug("Pruning removed drawings from index");
                 var key = ClusterConstants.AllDrawingsIndexKey;
-                var removeOp = new Update(key, LWWDictionary<string, DrawingActivityUpdate>.Empty, _writeConsistency,
+                var updateOp = new Update(key, LWWDictionary<string, DrawingActivityUpdate>.Empty, _writeConsistency,
                     dictionary =>
                     {
                         var dict = (LWWDictionary<string, DrawingActivityUpdate>)dictionary;
-                        
-                        // purge this entry from the replicated copies of the dictionaries
-                        dict = dict.Remove(_cluster, update.DrawingSessionId.SessionId);
+                        foreach (var i in dict.Entries.Where(c => c.Value.IsRemoved))
+                        {
+                            dict = dict.Remove(_cluster, i.Key);
+                        }
                         return dict;
                     });
-                _replicator.Tell(removeOp);
+                _replicator.Tell(updateOp);
                 break;
             }
             
@@ -68,5 +81,13 @@ public sealed class AllDrawingsPublisherActor : UntypedActor
                 Unhandled(message);
                 break;
         }
+    }
+
+    public ITimerScheduler Timers { get; set; } = null!;
+
+    protected override void PreStart()
+    {
+        // schedule a periodic update to all subscribers
+        Timers.StartPeriodicTimer("prune-removed-drawings", PruneRemovedDrawings.Instance, TimeSpan.FromMinutes(30));
     }
 }

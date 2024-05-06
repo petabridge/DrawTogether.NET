@@ -16,20 +16,25 @@ public sealed class AllDrawingsIndexActor : UntypedActor, IWithTimers
     /// <summary>
     /// Timer-driven message to publish all updates to subscribers
     /// </summary>
-    public sealed class PublishAllUpdates : IDeadLetterSuppression, INoSerializationVerificationNeeded, INotInfluenceReceiveTimeout
+    public sealed class PublishAllUpdates : IDeadLetterSuppression, INoSerializationVerificationNeeded,
+        INotInfluenceReceiveTimeout
     {
-        private PublishAllUpdates() { }
+        private PublishAllUpdates()
+        {
+        }
+
         public static PublishAllUpdates Instance { get; } = new();
     }
-    
     private readonly ILoggingAdapter _log = Context.GetLogger();
+
     private LWWDictionary<string, DrawingActivityUpdate> _recentDrawingStateUpdates =
         LWWDictionary<string, DrawingActivityUpdate>.Empty;
+
     private readonly IActorRef _replicator = DistributedData.Get(Context.System).Replicator;
-    
+
     private DateTime _lastUpdate = DateTime.MinValue;
     private DateTime _lastPublish = DateTime.MinValue;
-    
+
     private readonly HashSet<IActorRef> _subscribers = new();
 
     protected override void OnReceive(object message)
@@ -56,15 +61,17 @@ public sealed class AllDrawingsIndexActor : UntypedActor, IWithTimers
                 var rValues = _recentDrawingStateUpdates.Values.ToList();
                 Sender.Tell(rValues);
                 break;
-            case DrawingIndexQueries.SubscribeToDrawingSessionUpdates:
-                _subscribers.Add(Sender);
-                Context.Watch(Sender);
+            case DrawingIndexQueries.SubscribeToDrawingSessionUpdates subscribeToDrawingSessionUpdates:
+                _subscribers.Add(subscribeToDrawingSessionUpdates.Subscriber);
+                Context.WatchWith(subscribeToDrawingSessionUpdates.Subscriber,
+                    new DrawingIndexQueries.UnsubscribeFromDrawingSessionUpdates(subscribeToDrawingSessionUpdates
+                        .Subscriber));
                 break;
-            case DrawingIndexQueries.UnsubscribeFromDrawingSessionUpdates:
-                _subscribers.Remove(Sender);
-                Context.Unwatch(Sender);
+            case DrawingIndexQueries.UnsubscribeFromDrawingSessionUpdates unsub:
+                _subscribers.Remove(unsub.Subscriber);
+                Context.Unwatch(unsub.Subscriber);
                 break;
-            case PublishAllUpdates _:
+            case PublishAllUpdates:
             {
                 // only publish if we have new updates
                 if (_lastUpdate > _lastPublish)
@@ -75,6 +82,7 @@ public sealed class AllDrawingsIndexActor : UntypedActor, IWithTimers
                         subscriber.Tell(_recentDrawingStateUpdates.Values.ToList());
                     }
                 }
+
                 break;
             }
             case Terminated terminated:
@@ -95,7 +103,7 @@ public sealed class AllDrawingsIndexActor : UntypedActor, IWithTimers
 
         // subscribe to changes in the index
         _replicator.Tell(Dsl.Subscribe(AllDrawingsIndexKey, Self));
-        
+
         // schedule a periodic update to all subscribers
         Timers.StartPeriodicTimer("publish-all-updates", PublishAllUpdates.Instance, TimeSpan.FromSeconds(5));
     }
@@ -118,7 +126,8 @@ public static class DrawingIndexAkkaHostingExtensions
         // add the corresponding publisher actor
         builder.WithActors((system, registry, resolver) =>
         {
-            var allDrawingsPublisherActor = system.ActorOf(Props.Create<AllDrawingsPublisherActor>(), "all-drawings-publisher");
+            var allDrawingsPublisherActor =
+                system.ActorOf(Props.Create<AllDrawingsPublisherActor>(), "all-drawings-publisher");
             registry.Register<AllDrawingsPublisherActor>(allDrawingsPublisherActor);
         });
 
