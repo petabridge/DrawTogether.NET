@@ -13,6 +13,8 @@ public sealed record DrawingSessionState(DrawingSessionId DrawingSessionId) : IW
     public ImmutableHashSet<UserId> ConnectedUsers { get; init; } = ImmutableHashSet<UserId>.Empty;
 
     public DateTime LastUpdate { get; init; } = DateTime.UtcNow;
+    
+    public bool IsEmpty => Strokes.IsEmpty && ConnectedUsers.IsEmpty;
 }
 
 public static class DrawingSessionStateExtensions
@@ -95,12 +97,12 @@ public static class DrawingSessionStateExtensions
         }
     }
     
-    public static DrawingSessionState ApplyEvents(this DrawingSessionState state, IEnumerable<IDrawingSessionEvent> events)
+    public static DrawingSessionState Apply(this DrawingSessionState currentState, IDrawingSessionEvent @event)
     {
-        return events.Aggregate(state, (currentState, @event) => @event switch
+        var e = @event switch
         {
             DrawingSessionEvents.StrokeAdded strokeAdded =>
-                currentState with { Strokes = currentState.Strokes.SetItem(strokeAdded.Stroke.Id, strokeAdded.Stroke) },
+                currentState with { Strokes = currentState.Strokes.SetItem(strokeAdded.Stroke.Id, strokeAdded.Stroke), LastUpdate = DateTime.UtcNow},
             DrawingSessionEvents.StrokeRemoved strokeRemoved =>
                 currentState with { Strokes = currentState.Strokes.Remove(strokeRemoved.StrokeId) },
             DrawingSessionEvents.StrokesCleared =>
@@ -110,6 +112,9 @@ public static class DrawingSessionStateExtensions
             DrawingSessionEvents.UserRemoved userRemoved =>
                 currentState with { ConnectedUsers = currentState.ConnectedUsers.Remove(userRemoved.UserId) },
             _ => currentState
-        });
+        };
+        
+        e = e with { LastUpdate = DateTime.UtcNow };
+        return e;
     }
 }

@@ -17,4 +17,16 @@ public static class DrawingIndexQueries
         private GetAllActiveDrawingSessions() { }
         public static GetAllActiveDrawingSessions Instance { get; } = new();
     }
+    
+    public sealed class SubscribeToDrawingSessionUpdates
+    {
+        private SubscribeToDrawingSessionUpdates() { }
+        public static SubscribeToDrawingSessionUpdates Instance { get; } = new();
+    }
+    
+    public sealed class UnsubscribeFromDrawingSessionUpdates
+    {
+        private UnsubscribeFromDrawingSessionUpdates() { }
+        public static UnsubscribeFromDrawingSessionUpdates Instance { get; } = new();
+    }
 }
