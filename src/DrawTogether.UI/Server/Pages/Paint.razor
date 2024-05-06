@@ -1,5 +1,5 @@
 @page "/paint/{sessionId}"
-@inject NavigationManager navigationManager;
+@inject NavigationManager NavigationManager;
 @using DrawTogether.UI.Server.Components
 @using DrawTogether.UI.Shared
 @using Microsoft.AspNetCore.SignalR.Client
@@ -50,9 +50,9 @@
     protected override async Task OnInitializedAsync()
     {
         // Create the chat client
-        var baseUrl = navigationManager.BaseUri;
+        var baseUrl = NavigationManager.BaseUri;
 
-        _hubUrl = navigationManager.BaseUri.TrimEnd('/') + DrawHubConstants.HubUri;
+        _hubUrl = NavigationManager.BaseUri.TrimEnd('/') + DrawHubConstants.HubUri;
 
         blazorHubDebugMessage = $"Attempting to connect to {_hubUrl}";
 

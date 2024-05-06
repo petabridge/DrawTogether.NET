@@ -2,7 +2,7 @@
 <path d="@PathData(_points)" fill="None" stroke="@Stroke" stroke-width="@StrokeWidth"></path>
 
 @code {
-    private Point[] _points { get; set; } = new Point[0];
+    private Point[] _points { get; set; } = [];
 
     [Parameter] public List<Point> Points { get; set; } = new();
 
@@ -21,21 +21,21 @@
         return false;
     }
 
-    protected static string PathData(Point[] Points)
+    private static string PathData(Point[] points)
     {
         // Parameter for smoothness of path in interval [0, 0.5]
         var smoothness = 1.0 / 3.0;
 
         var result = "";
-        if (Points.Length >= 2)
+        if (points.Length >= 2)
         {
-            result = $"M {Points[0].X} {Points[0].Y} ";
-            for (var i = 1; i < Points.Length - 1; i++)
+            result = $"M {points[0].X} {points[0].Y} ";
+            for (var i = 1; i < points.Length - 1; i++)
             {
-                result += $"S {Points[i - 1].X * smoothness / 2 + Points[i].X - Points[i + 1].X * smoothness / 2} {Points[i - 1].Y * smoothness / 2 + Points[i].Y - Points[i + 1].Y * smoothness / 2} {Points[i].X} {Points[i].Y} ";
+                result += $"S {points[i - 1].X * smoothness / 2 + points[i].X - points[i + 1].X * smoothness / 2} {points[i - 1].Y * smoothness / 2 + points[i].Y - points[i + 1].Y * smoothness / 2} {points[i].X} {points[i].Y} ";
             }
 
-            result += $"S {Points[^2].X * smoothness + Points[^1].X * (1 - smoothness)} {Points[^2].Y * smoothness + Points[^1].Y * (1 - smoothness)} {Points[^1].X} {Points[^1].Y} ";
+            result += $"S {points[^2].X * smoothness + points[^1].X * (1 - smoothness)} {points[^2].Y * smoothness + points[^1].Y * (1 - smoothness)} {points[^1].X} {points[^1].Y} ";
         }
 
         return result;
