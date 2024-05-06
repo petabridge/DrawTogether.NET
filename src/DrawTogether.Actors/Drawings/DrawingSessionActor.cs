@@ -1,6 +1,8 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Hosting;
 using Akka.Cluster.Sharding;
 using Akka.Event;
+using Akka.Hosting;
 using Akka.Persistence;
 using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
@@ -15,36 +17,42 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
     /// <summary>
     /// Timer-driven message to publish the current state of the drawing session
     /// </summary>
-    public sealed class PublishActivity : IDeadLetterSuppression, INoSerializationVerificationNeeded, INotInfluenceReceiveTimeout
+    public sealed class PublishActivity : IDeadLetterSuppression, INoSerializationVerificationNeeded,
+        INotInfluenceReceiveTimeout
     {
-        private PublishActivity() { }
+        private PublishActivity()
+        {
+        }
+
         public static PublishActivity Instance { get; } = new();
     }
-    
+
     public override string PersistenceId { get; }
     public DrawingSessionState State { get; private set; }
-    
+
     /// <summary>
     /// Used for updating the <see cref="AllDrawingsIndexActor"/>'s state and
     /// operates are a lower data refresh rate than our direct subscribers
     /// </summary>
     private readonly IActorRef _drawingActivityPublisher;
+
     private DateTime? _lastActivityPublished;
-    
+
     /// <summary>
     /// Subscribers to this drawing session - they will be notified
     /// if we are killed / rebalanced re-subscribe.
     /// </summary>
     private readonly HashSet<IActorRef> _subscribers = new();
+
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    
-    public DrawingSessionActor(string sessionId, IActorRef drawingActivityPublisher)
+
+    public DrawingSessionActor(string sessionId, IRequiredActor<AllDrawingsPublisherActor> drawingActivityPublisher)
     {
         PersistenceId = sessionId;
-        _drawingActivityPublisher = drawingActivityPublisher;
+        _drawingActivityPublisher = drawingActivityPublisher.ActorRef;
         State = new DrawingSessionState(new DrawingSessionId(sessionId));
     }
-    
+
     protected override void OnCommand(object message)
     {
         switch (message)
@@ -58,7 +66,7 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
                     Sender.Tell(resp);
                     return;
                 }
-                
+
                 var hasReplied = false;
 
                 if (State.IsEmpty)
@@ -66,7 +74,7 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
                     // special case: state is empty, need to speed up activity publishing
                     Self.Tell(PublishActivity.Instance);
                 }
-                
+
                 PersistAll(events, evt =>
                 {
                     if (!hasReplied)
@@ -74,29 +82,30 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
                         Sender.Tell(resp);
                         hasReplied = true;
                     }
-                    
+
                     PublishToSubscribers(evt);
                     State = State.Apply(evt);
-                    
+
 
                     if (LastSequenceNr % 100 == 0)
                     {
                         SaveSnapshot(State);
                     }
                 });
-                
+
                 break;
             }
             case PublishActivity:
             {
-                if(_lastActivityPublished.HasValue && _lastActivityPublished == State.LastUpdate)
+                if (_lastActivityPublished.HasValue && _lastActivityPublished == State.LastUpdate)
                 {
                     // we've already published this update
                     return;
                 }
-                
-                _drawingActivityPublisher.Tell(new DrawingActivityUpdate(State.DrawingSessionId, State.ConnectedUsers.Count, State.LastUpdate, false));
-                
+
+                _drawingActivityPublisher.Tell(new DrawingActivityUpdate(State.DrawingSessionId,
+                    State.ConnectedUsers.Count, State.LastUpdate, false));
+
                 // sync the clocks
                 _lastActivityPublished = State.LastUpdate;
                 break;
@@ -125,15 +134,16 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
             case ReceiveTimeout _:
             {
                 _log.Info("Drawing session {DrawingSessionId} has been idle for too long, closing session");
-                
+
                 Persist(new DrawingSessionEvents.DrawingSessionClosed(State.DrawingSessionId), evt =>
                 {
                     State = State.Apply(evt);
                     PublishToSubscribers(evt);
-                    
+
                     // let everyone know the session is toast
-                    _drawingActivityPublisher.Tell(new DrawingActivityUpdate(State.DrawingSessionId, State.ConnectedUsers.Count, State.LastUpdate, true));
-                    
+                    _drawingActivityPublisher.Tell(new DrawingActivityUpdate(State.DrawingSessionId,
+                        State.ConnectedUsers.Count, State.LastUpdate, true));
+
                     // have the sharding system forget us and shut us down
                     Context.Parent.Tell(new Passivate(PoisonPill.Instance));
                 });
@@ -141,7 +151,7 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
             }
         }
     }
-    
+
     private void PublishToSubscribers(IDrawingSessionEvent evt)
     {
         foreach (var subscriber in _subscribers)
@@ -166,10 +176,27 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
     protected override void PreStart()
     {
         Timers.StartPeriodicTimer("publish-activity", PublishActivity.Instance, TimeSpan.FromSeconds(5));
-        
+
         // if we go more than 2 minutes without activity, we time the session out
         Context.SetReceiveTimeout(TimeSpan.FromMinutes(2));
     }
 
     public ITimerScheduler Timers { get; set; } = null!;
+}
+
+public static class DrawingSessionActorExtensions
+{
+    public static AkkaConfigurationBuilder AddDrawingSessionActor(this AkkaConfigurationBuilder builder, string clusterRoleName = ClusterConstants.DrawStateRoleName)
+    {
+        builder.WithShardRegion<DrawingSessionActor>("drawing-session",
+            (system, registry, resolver) => s => resolver.Props<DrawingSessionActor>(s),
+            new DrawingSessionActorMessageExtractor(), new ShardOptions()
+            {
+                StateStoreMode = StateStoreMode.DData,
+                RememberEntities = true,
+                RememberEntitiesStore = RememberEntitiesStore.Eventsourced,
+                Role = clusterRoleName
+            });
+        return builder;
+    }
 }

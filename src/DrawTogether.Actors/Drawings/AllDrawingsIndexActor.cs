@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Hosting;
 using Akka.DistributedData;
 using Akka.Event;
 using Akka.Hosting;
@@ -111,6 +112,24 @@ public static class DrawingIndexAkkaHostingExtensions
             registry.Register<AllDrawingsIndexActor>(allDrawingsIndexActor);
         });
 
+        // add the corresponding publisher actor
+        builder.WithActors((system, registry, resolver) =>
+        {
+            var allDrawingsPublisherActor = system.ActorOf(Props.Create<AllDrawingsPublisherActor>(), "all-drawings-publisher");
+            registry.Register<AllDrawingsPublisherActor>(allDrawingsPublisherActor);
+        });
+
+        // configure DData accordingly
+        builder.WithDistributedData(options =>
+        {
+            options.Durable = new DurableOptions()
+            {
+                // disable durable storage for this actor
+                Keys = []
+            };
+            options.RecreateOnFailure = true;
+            options.Role = clusterRoleName;
+        });
 
         return builder;
     }
