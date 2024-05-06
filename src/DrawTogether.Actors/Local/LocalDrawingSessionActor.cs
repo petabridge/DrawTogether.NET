@@ -181,8 +181,9 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
             .PreMaterialize(_materializer);
 
         _debouncer = sourceRef;
-        source.GroupedWithin(10, TimeSpan.FromMilliseconds(75))
+        source.GroupedWithin(100, TimeSpan.FromMilliseconds(75))
             .Select(c => TransmitActions(c.ToList()))
+            .SelectMany(c => c)
             .SelectAsync(1, async c =>
             {
                 try
