@@ -4,7 +4,6 @@ using Akka.Event;
 using Akka.Hosting;
 using Akka.Streams;
 using Akka.Streams.Dsl;
-using Akka.Util;
 using DrawTogether.Actors.Drawings;
 using DrawTogether.Entities;
 using DrawTogether.Entities.Drawings;
@@ -18,7 +17,8 @@ namespace DrawTogether.Actors.Local;
 /// </summary>
 public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
 {
-    public sealed class RetryConnectionToDrawingSession : IDeadLetterSuppression, INoSerializationVerificationNeeded, INotInfluenceReceiveTimeout
+    public sealed class RetryConnectionToDrawingSession : IDeadLetterSuppression, INoSerializationVerificationNeeded,
+        INotInfluenceReceiveTimeout
     {
         private RetryConnectionToDrawingSession()
         {
@@ -40,13 +40,15 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     /// <summary>
     /// Used to produce a <see cref="DrawingChannelResponse"/>
     /// </summary>
-    public sealed class GetDrawingChannel : IDeadLetterSuppression, INoSerializationVerificationNeeded
+    public sealed class GetDrawingChannel : IDeadLetterSuppression, INoSerializationVerificationNeeded,
+        IWithDrawingSessionId
     {
-        private GetDrawingChannel()
+        public GetDrawingChannel(DrawingSessionId drawingSessionId)
         {
+            DrawingSessionId = drawingSessionId;
         }
 
-        public static GetDrawingChannel Instance { get; } = new();
+        public DrawingSessionId DrawingSessionId { get; }
     }
 
     /// <summary>
@@ -117,6 +119,10 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                 _log.Warning("Shutting down local handle to [{0}]", _drawingSessionId);
                 Context.Stop(Self);
                 break;
+            case RemoteDrawingSessionActorDied died:
+                _log.Warning("Remote DrawingSession [{0}] died", died.DrawingSessionId);
+                AttemptToSubscribe();
+                break;
         }
     }
 
@@ -186,7 +192,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                 }
             }, _materializer);
     }
-    
+
     protected override void PostStop()
     {
         _drawingChannel.Writer.TryComplete();
@@ -197,5 +203,22 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         _drawingSessionActor.Tell(new DrawingSessionQueries.SubscribeToDrawingSession(_drawingSessionId));
         Timers.StartPeriodicTimer("ConnectToChannel", RetryConnectionToDrawingSession.Instance,
             TimeSpan.FromMilliseconds(500));
+    }
+}
+
+public static class LocalDrawingActorConfigExtensions
+{
+    public static AkkaConfigurationBuilder AddLocalDrawingSessionActor(this AkkaConfigurationBuilder builder)
+    {
+        builder.WithActors((system, registry, resolver) =>
+        {
+            var genericChildPerEntityParentProps = Props.Create(() => new GenericChildPerEntityParent(
+                new DrawingSessionActorMessageExtractor(),
+                id => resolver.Props<LocalDrawingSessionActor>(id)));
+
+            var genericChildPerEntityParent = system.ActorOf(genericChildPerEntityParentProps, "local-drawing-session");
+            registry.Register<LocalDrawingSessionActor>(genericChildPerEntityParent);
+        });
+        return builder;
     }
 }
