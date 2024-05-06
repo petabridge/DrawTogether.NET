@@ -1,3 +1,6 @@
 ﻿namespace DrawTogether.Entities.Users;
 
-public sealed class UserId(string IdentityName);
+public sealed class UserId(string identityName)
+{
+    public string IdentityName { get; } = identityName;
+}

@@ -40,10 +40,12 @@ public static class LocalPaintProtocol
         public UserId UserId { get; } = userId;
     }
 
-    public sealed class CreateConnectedStroke(StrokeId strokeId, DrawingSessionId drawingSessionId, UserId userId)
+    public sealed class CreateConnectedStroke(DrawingSessionId drawingSessionId, UserId userId, ConnectedStroke connectedStroke)
         : IPaintSessionMessage
     {
-        public StrokeId StrokeId { get; } = strokeId;
+        public StrokeId StrokeId { get; } = connectedStroke.Id;
+        
+        public ConnectedStroke ConnectedStroke { get; } = connectedStroke;
         public DrawingSessionId DrawingSessionId { get; } = drawingSessionId;
         public UserId UserId { get; } = userId;
     }

@@ -4,7 +4,6 @@ using Akka.Cluster.Sharding;
 using Akka.Event;
 using Akka.Hosting;
 using Akka.Persistence;
-using DrawTogether.Entities;
 using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 

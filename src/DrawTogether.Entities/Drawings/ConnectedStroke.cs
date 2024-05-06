@@ -1,6 +1,13 @@
 ﻿namespace DrawTogether.Entities.Drawings;
 
-public readonly struct StrokeId(int Id);
+public readonly struct StrokeId(int id)
+{
+    public int Id { get; } = id;
+    // override the == operator
+    public static bool operator ==(StrokeId left, StrokeId right) => left.Id.Equals(right.Id);
+
+    public static bool operator !=(StrokeId left, StrokeId right) => !(left == right);
+}
 
 public sealed record Color(string HexCodeOrColorName)
 {
@@ -13,7 +20,7 @@ public sealed record Color(string HexCodeOrColorName)
 /// <param name="Id">The unique identity for this stroke.</param>
 public sealed record ConnectedStroke(StrokeId Id)
 {
-    public IReadOnlyCollection<Point> Points { get; init; } = new List<Point>();
+    public IReadOnlyCollection<Point> Points { get; init; } = Array.Empty<Point>();
     
     public GreaterThanZeroInteger StrokeWidth { get; init; } = GreaterThanZeroInteger.Default;
     

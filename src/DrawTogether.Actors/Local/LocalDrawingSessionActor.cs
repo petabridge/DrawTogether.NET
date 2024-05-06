@@ -2,18 +2,23 @@
 using Akka.Actor;
 using Akka.Event;
 using Akka.Hosting;
+using Akka.Streams;
+using Akka.Streams.Dsl;
+using Akka.Util;
 using DrawTogether.Actors.Drawings;
+using DrawTogether.Entities;
 using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
+using static DrawTogether.Actors.Local.LocalPaintProtocol;
 
 namespace DrawTogether.Actors.Local;
 
 /// <summary>
 /// A local handle for a specific drawing instance
 /// </summary>
-public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers, IWithStash
+public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
 {
-    public sealed class RetryConnectionToDrawingSession : IDeadLetterSuppression, INoSerializationVerificationNeeded
+    public sealed class RetryConnectionToDrawingSession : IDeadLetterSuppression, INoSerializationVerificationNeeded, INotInfluenceReceiveTimeout
     {
         private RetryConnectionToDrawingSession()
         {
@@ -21,7 +26,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers, IWithS
 
         public static RetryConnectionToDrawingSession Instance { get; } = new();
     }
-    
+
     public sealed class RemoteDrawingSessionActorDied : IDeadLetterSuppression, INoSerializationVerificationNeeded
     {
         public RemoteDrawingSessionActorDied(DrawingSessionId drawingSessionId)
@@ -31,7 +36,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers, IWithS
 
         public DrawingSessionId DrawingSessionId { get; }
     }
-    
+
     /// <summary>
     /// Used to produce a <see cref="DrawingChannelResponse"/>
     /// </summary>
@@ -40,9 +45,10 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers, IWithS
         private GetDrawingChannel()
         {
         }
+
         public static GetDrawingChannel Instance { get; } = new();
     }
-    
+
     /// <summary>
     /// Response to <see cref="GetDrawingChannel"/>
     /// </summary>
@@ -55,14 +61,19 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers, IWithS
 
         public ChannelReader<IDrawingSessionEvent> DrawingChannel { get; }
     }
-    
+
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _drawingSessionActor;
     private readonly DrawingSessionId _drawingSessionId;
     private readonly Channel<IDrawingSessionEvent> _drawingChannel = Channel.CreateUnbounded<IDrawingSessionEvent>();
+    private readonly IMaterializer _materializer = Context.System.Materializer();
     private IActorRef _debouncer = ActorRefs.Nobody;
 
-    public LocalDrawingSessionActor(DrawingSessionId drawingSessionId, IRequiredActor<DrawingSessionActor> drawingSessionActor)
+    private readonly int _randomSeed = Random.Shared.Next();
+    private int _strokeIdCounter = 0;
+
+    public LocalDrawingSessionActor(DrawingSessionId drawingSessionId,
+        IRequiredActor<DrawingSessionActor> drawingSessionActor)
     {
         _drawingSessionId = drawingSessionId;
         _drawingSessionActor = drawingSessionActor.ActorRef;
@@ -72,45 +83,119 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers, IWithS
     {
         switch (message)
         {
+            case AddPointToConnectedStroke or CreateConnectedStroke:
+                _debouncer.Tell(message);
+                break;
+            case IPaintSessionMessage paintMessage:
+                _drawingSessionActor.Tell(paintMessage);
+                break;
+            case CommandResult cmdResult:
+                if (cmdResult.IsError)
+                {
+                    _log.Warning("Failed to send commands to DrawingSession [{0}]: {1}", _drawingSessionId,
+                        cmdResult.Message);
+                }
+
+                break;
+            case IDrawingSessionEvent drawingEvent: // live updates from the server (source of truth)
+                // publish the event to our channel
+                _drawingChannel.Writer.TryWrite(drawingEvent);
+                break;
             case GetDrawingChannel:
                 Sender.Tell(new DrawingChannelResponse(_drawingChannel.Reader));
                 break;
             case DrawingSessionQueries.SubscribeAcknowledged subscribed:
                 _log.Info("Subscribed to DrawingSession [{0}]", _drawingSessionId);
-                Become(HasConnectionToDrawingSession);
-                
                 // used to trigger re-subcribes
                 Context.WatchWith(Sender, new RemoteDrawingSessionActorDied(_drawingSessionId));
-                Stash.UnstashAll();
                 Timers.Cancel("ConnectToChannel");
                 break;
             case RetryConnectionToDrawingSession _:
                 AttemptToSubscribe();
                 break;
-            case IDrawingSessionEvent drawingEvent:
-                // publish the event to our channel
-                _drawingChannel.Writer.TryWrite(drawingEvent);
+            case ReceiveTimeout _:
+                _log.Warning("Shutting down local handle to [{0}]", _drawingSessionId);
+                Context.Stop(Self);
                 break;
         }
     }
 
-    private void HasConnectionToDrawingSession(object message)
+    private List<IDrawingSessionCommand> TransmitActions(IReadOnlyList<IPaintSessionMessage> actions)
     {
-        
+        var createActions = actions.Where(a => a is CreateConnectedStroke)
+            .Select(a => ((CreateConnectedStroke)a).ConnectedStroke)
+            .ToArray();
+
+        var addActions = actions.OfType<AddPointToConnectedStroke>().ToArray();
+
+        _log.Info("BATCHED {0} create actions and {1} add actions", createActions.Length, addActions.Length);
+
+        var drawSessionCommands = new List<IDrawingSessionCommand>();
+
+        foreach (var create in createActions)
+        {
+            var allPoints = create.Points.ToList();
+
+            foreach (var a in addActions.Where(a => a.StrokeId == create.Id))
+            {
+                allPoints.Add(a.Point);
+            }
+
+            drawSessionCommands.Add(new DrawingSessionCommands.AddStroke(_drawingSessionId,
+                create with { Points = allPoints }));
+        }
+
+        return drawSessionCommands;
     }
 
     public ITimerScheduler Timers { get; set; } = null!;
-    public IStash Stash { get; set; }
+    public IStash Stash { get; set; } = null!;
 
     protected override void PreStart()
     {
         AttemptToSubscribe();
-        _drawingSessionActor.Ask<DrawingSessionState>()
+
+        Context.SetReceiveTimeout(TimeSpan.FromMinutes(2));
+        var (sourceRef, source) = Source.ActorRef<IPaintSessionMessage>(1000, OverflowStrategy.DropHead)
+            .PreMaterialize(_materializer);
+
+        _debouncer = sourceRef;
+        source.GroupedWithin(10, TimeSpan.FromMilliseconds(75))
+            .Select(c => TransmitActions(c.ToList()))
+            .SelectAsync(1, async c =>
+            {
+                try
+                {
+                    var result = await _drawingSessionActor.Ask<CommandResult>(c, TimeSpan.FromSeconds(2));
+
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex, "Failed to send commands to DrawingSession [{0}]", _drawingSessionId);
+                    return new CommandResult()
+                        { Code = ResultCode.TimeOut, Message = "Failed to send commands to DrawingSession" };
+                }
+            })
+            .RunForeach(result =>
+            {
+                if (result.IsError)
+                {
+                    _log.Warning("Failed to send commands to DrawingSession [{0}]: {1}", _drawingSessionId,
+                        result.Message);
+                }
+            }, _materializer);
+    }
+    
+    protected override void PostStop()
+    {
+        _drawingChannel.Writer.TryComplete();
     }
 
     private void AttemptToSubscribe()
     {
         _drawingSessionActor.Tell(new DrawingSessionQueries.SubscribeToDrawingSession(_drawingSessionId));
-        Timers.StartPeriodicTimer("ConnectToChannel", RetryConnectionToDrawingSession.Instance, TimeSpan.FromMilliseconds(500));
+        Timers.StartPeriodicTimer("ConnectToChannel", RetryConnectionToDrawingSession.Instance,
+            TimeSpan.FromMilliseconds(500));
     }
 }
