@@ -1,3 +1,3 @@
 ﻿namespace DrawTogether.Entities.Drawings;
 
-public sealed class DrawingSessionId(string SessionId);
+public sealed record DrawingSessionId(string SessionId);

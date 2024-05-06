@@ -9,4 +9,6 @@ public sealed record DrawingSessionState(DrawingSessionId DrawingSessionId) : IW
     public ImmutableDictionary<StrokeId, ConnectedStroke> Strokes { get; init; } = ImmutableDictionary<StrokeId, ConnectedStroke>.Empty;
     
     public ImmutableHashSet<UserId> ConnectedUsers { get; init; } = ImmutableHashSet<UserId>.Empty;
+    
+    public DateTime LastUpdate { get; init; } = DateTime.UtcNow;
 }
