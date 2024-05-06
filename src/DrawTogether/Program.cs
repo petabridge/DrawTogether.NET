@@ -5,6 +5,8 @@ using DrawTogether.Components;
 using DrawTogether.Components.Account;
 using DrawTogether.Data;
 using DrawTogether.Email;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +18,11 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-builder.Services.AddEmailServices(builder.Configuration); // add email services
+builder.Services.AddEmailServices<ApplicationUser>(builder.Configuration); // add email services
+
+// if an email provider is not registered, add the no op email provider
+builder.Services.TryAddSingleton<IEmailSender, NoOpEmailSender>();
+builder.Services.TryAddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 builder.Services.AddAuthentication(options =>
     {
@@ -35,7 +41,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true); 
 
 var app = builder.Build();
 
