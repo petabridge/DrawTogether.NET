@@ -27,6 +27,16 @@
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
+                    <button class="nav-link" @onclick="Handler">
+                        <span class="bi bi-pencil-fill-nav-menu" aria-hidden="true"></span> New Drawing
+                    </button>>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Manage">
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
                         <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
                     </NavLink>
@@ -60,6 +70,8 @@
 @code {
     private string? _currentUrl;
 
+    protected string GetNewGuid() => Guid.NewGuid().ToString();
+
     protected override void OnInitialized()
     {
         _currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
@@ -75,6 +87,12 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private void Handler()
+    {
+        var newGuid = GetNewGuid();
+        NavigationManager.NavigateTo($"paint/{newGuid}");
     }
 
 }

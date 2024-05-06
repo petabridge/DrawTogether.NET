@@ -82,10 +82,10 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     private readonly IMaterializer _materializer = Context.System.Materializer();
     private IActorRef _debouncer = ActorRefs.Nobody;
 
-    public LocalDrawingSessionActor(DrawingSessionId drawingSessionId,
+    public LocalDrawingSessionActor(string drawingSessionId,
         IRequiredActor<DrawingSessionActor> drawingSessionActor)
     {
-        _drawingSessionId = drawingSessionId;
+        _drawingSessionId = new DrawingSessionId(drawingSessionId);
         _drawingSessionActor = drawingSessionActor.ActorRef;
     }
 

@@ -31,11 +31,12 @@ else
         <tbody>
         @foreach (var session in _drawingActivities)
         {
+            var hrefUri = $"paint/{session.Key!.SessionId}";
             <tr>
-                <td>@session.Key.SessionId</td>
+                <td>@session.Key!.SessionId</td>
                 <td>@session.Value.ActiveUsers</td>
                 <td>@session.Value.LastUpdate</td>
-                <td>Join Button</td>
+                <td><MudLink Href="@hrefUri">Join Session!</MudLink></td>
             </tr>
         }
         </tbody>
@@ -43,8 +44,8 @@ else
 }
 
 @code{
-    private Dictionary<DrawingSessionId, DrawingActivityUpdate> _drawingActivities = new();
-    private CancellationTokenSource _shutdownCts = new();
+    private readonly Dictionary<DrawingSessionId, DrawingActivityUpdate> _drawingActivities = new();
+    private readonly CancellationTokenSource _shutdownCts = new();
 
     protected override async Task OnInitializedAsync()
     {

@@ -60,20 +60,15 @@
 
     public DateTime LastUpdate { get; set; } = DateTime.UtcNow;
 
-    DrawingSessionId DrawingSessionId { get; set; }
+    DrawingSessionId? DrawingSessionId { get; set; }
 
     private ChannelReader<IDrawingSessionEvent>? _eventStream = null;
 
-    private IActorRef _localActorHandle;
+    private IActorRef? _localActorHandle;
     private readonly CancellationTokenSource _shutdownCts = new();
 
     private ClaimsPrincipal? _user;
-    private UserId _currentUserId;
-
-    private record StartupTasks(Task<IActorRef> LocalHandleTask, Task<DrawingSessionState> CurrentSnapshotTask, Task<LocalDrawingSessionActor.DrawingChannelResponse> EventStreamTask)
-    {
-        Task WhenAll => Task.WhenAll(LocalHandleTask, CurrentSnapshotTask, EventStreamTask);
-    }
+    private UserId? _currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,7 +157,7 @@
     double cY = 110.0d;
     private Color _color = new("black");
     private GreaterThanZeroInteger _cursorSize = new(8);
-    
+
     private string mousePointerMessage = "foo";
     private string blazorHubDebugMessage = "bar";
 
@@ -239,7 +234,7 @@
     public async ValueTask DisposeAsync()
     {
         await _shutdownCts.CancelAsync();
-        _localActorHandle.Tell(new LocalPaintProtocol.LeavePaintSession(DrawingSessionId, _currentUserId));
+        if (DrawingSessionId != null && _currentUserId is not null) _localActorHandle.Tell(new LocalPaintProtocol.LeavePaintSession(DrawingSessionId, _currentUserId));
         _shutdownCts.Dispose();
     }
 
