@@ -1,0 +1,18 @@
+﻿<h4>Cursor</h4>
+<section id="color-picker" style="width: 200px;">
+    <label>
+        Cursor Size
+        <label>
+            Cursor Size (px)
+            <input @bind="CursorSize"/>
+        </label>
+
+        <button class="btn btn-primary" @onclick="@(async e => await CursorSizeChanged.InvokeAsync(int.Parse(CursorSize)))">Set Cursor</button>
+    </label>
+</section>
+
+@code {
+    [Parameter] public string CursorSize { get; set; } = "8";
+
+    [Parameter] public EventCallback<int> CursorSizeChanged { get; set; }
+}

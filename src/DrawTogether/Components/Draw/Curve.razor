@@ -1,0 +1,44 @@
+﻿@using DrawTogether.Entities.Drawings
+<path d="@PathData(_points)" fill="None" stroke="@Stroke" stroke-width="@StrokeWidth"></path>
+
+@code {
+    private Point[] _points { get; set; } = [];
+
+    [Parameter] public IReadOnlyList<Point> Points { get; set; } = [];
+
+    [Parameter] public int StrokeWidth { get; set; } = 8;
+
+    [Parameter] public string Stroke { get; set; } = "#ff0000";
+
+    protected override bool ShouldRender()
+    {
+        if (_points.Length != Points.Count)
+        {
+            _points = Points.ToArray();
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string PathData(Point[] points)
+    {
+        // Parameter for smoothness of path in interval [0, 0.5]
+        var smoothness = 1.0 / 3.0;
+
+        var result = "";
+        if (points.Length >= 2)
+        {
+            result = $"M {points[0].X} {points[0].Y} ";
+            for (var i = 1; i < points.Length - 1; i++)
+            {
+                result += $"S {points[i - 1].X * smoothness / 2 + points[i].X - points[i + 1].X * smoothness / 2} {points[i - 1].Y * smoothness / 2 + points[i].Y - points[i + 1].Y * smoothness / 2} {points[i].X} {points[i].Y} ";
+            }
+
+            result += $"S {points[^2].X * smoothness + points[^1].X * (1 - smoothness)} {points[^2].Y * smoothness + points[^1].Y * (1 - smoothness)} {points[^1].X} {points[^1].Y} ";
+        }
+
+        return result;
+    }
+
+}

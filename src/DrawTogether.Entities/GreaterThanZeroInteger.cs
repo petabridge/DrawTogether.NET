@@ -13,7 +13,7 @@ public readonly struct GreaterThanZeroInteger
         Value = value;
     }
 
-    int Value { get; }
+    public int Value { get; }
     
     public static GreaterThanZeroInteger Default => new();
 }

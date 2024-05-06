@@ -63,6 +63,17 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
 
         public ChannelReader<IDrawingSessionEvent> DrawingChannel { get; }
     }
+    
+    public sealed class GetLocalActorHandle : IDeadLetterSuppression, INoSerializationVerificationNeeded,
+        IWithDrawingSessionId
+    {
+        public GetLocalActorHandle(DrawingSessionId drawingSessionId)
+        {
+            DrawingSessionId = drawingSessionId;
+        }
+
+        public DrawingSessionId DrawingSessionId { get; }
+    }
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _drawingSessionActor;
@@ -70,9 +81,6 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     private readonly Channel<IDrawingSessionEvent> _drawingChannel = Channel.CreateUnbounded<IDrawingSessionEvent>();
     private readonly IMaterializer _materializer = Context.System.Materializer();
     private IActorRef _debouncer = ActorRefs.Nobody;
-
-    private readonly int _randomSeed = Random.Shared.Next();
-    private int _strokeIdCounter = 0;
 
     public LocalDrawingSessionActor(DrawingSessionId drawingSessionId,
         IRequiredActor<DrawingSessionActor> drawingSessionActor)
@@ -103,6 +111,10 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                 // publish the event to our channel
                 _drawingChannel.Writer.TryWrite(drawingEvent);
                 break;
+            case DrawingSessionQueries.GetDrawingSessionState:
+                // forward message to the ShardRegion directly
+                _drawingSessionActor.Forward(message);
+                break;
             case GetDrawingChannel:
                 Sender.Tell(new DrawingChannelResponse(_drawingChannel.Reader));
                 break;
@@ -111,6 +123,9 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                 // used to trigger re-subcribes
                 Context.WatchWith(Sender, new RemoteDrawingSessionActorDied(_drawingSessionId));
                 Timers.Cancel("ConnectToChannel");
+                break;
+            case GetLocalActorHandle:
+                Sender.Tell(Self);
                 break;
             case RetryConnectionToDrawingSession _:
                 AttemptToSubscribe();

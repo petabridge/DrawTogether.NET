@@ -35,7 +35,7 @@ public sealed record Color(string HexCodeOrColorName)
 /// <param name="Id">The unique identity for this stroke.</param>
 public sealed record ConnectedStroke(StrokeId Id)
 {
-    public IReadOnlyCollection<Point> Points { get; init; } = Array.Empty<Point>();
+    public IReadOnlyList<Point> Points { get; init; } = Array.Empty<Point>();
     
     public GreaterThanZeroInteger StrokeWidth { get; init; } = GreaterThanZeroInteger.Default;
     
