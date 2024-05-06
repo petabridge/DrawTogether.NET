@@ -6,4 +6,12 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Akka.Cluster.Hosting" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Drawings\" />
+    </ItemGroup>
+
 </Project>
