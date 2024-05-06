@@ -9,10 +9,12 @@ Please see [REQUIREMENTS](docs/requirements.md) for more information.
 
 ## MailGun Configuration
 
-NugetUpdates uses [MailGun](https://mailgun.com/) to send outbound emails (via `FluentEmail.Mailgun`) - and the following two secrets need to be configured in order for that sending to work:
+DrawTogether.NET can use [MailGun](https://mailgun.com/) to send outbound emails (via `FluentEmail.Mailgun`) - and the following two secrets need to be configured in order for that sending to work:
 
 ```shell
-cd ./src/NuGetUpdates.Web/
+cd ./src/DrawTogether/
 dotnet user-secrets set "EmailSettings:MailgunDomain" "<mailgun-domain>"
 dotnet user-secrets set "EmailSettings:MailgunApiKey" "<mailgun-api-key>"
 ```
+
+If these settings are not provided, DrawTogether.NET will simply fall back to not having email available to support ASP.NET Core Identity.
