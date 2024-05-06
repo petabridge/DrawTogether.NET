@@ -1,12 +1,27 @@
 ﻿namespace DrawTogether.Entities.Drawings;
 
-public readonly struct StrokeId(int id)
+public readonly struct StrokeId(int id) : IEquatable<StrokeId>
 {
     public int Id { get; } = id;
     // override the == operator
     public static bool operator ==(StrokeId left, StrokeId right) => left.Id.Equals(right.Id);
 
     public static bool operator !=(StrokeId left, StrokeId right) => !(left == right);
+
+    public bool Equals(StrokeId other)
+    {
+        return Id == other.Id;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is StrokeId other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return Id;
+    }
 }
 
 public sealed record Color(string HexCodeOrColorName)

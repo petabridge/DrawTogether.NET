@@ -1,8 +1,10 @@
+using Akka.Hosting;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DrawTogether.Components;
 using DrawTogether.Components.Account;
+using DrawTogether.Config;
 using DrawTogether.Data;
 using DrawTogether.Email;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -41,8 +43,12 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true); 
-
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
+builder.Services.ConfigureAkka(builder.Configuration, 
+    (configurationBuilder, provider) =>
+{
+    
+});
 
 
 var app = builder.Build();

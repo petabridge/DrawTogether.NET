@@ -80,6 +80,9 @@ public sealed class AllDrawingsIndexActor : UntypedActor, IWithTimers
             case Terminated terminated:
                 _subscribers.Remove(terminated.ActorRef);
                 break;
+            case NotFound _:
+                // ignore - we're not initialized yet
+                break;
             default:
                 Unhandled(message);
                 break;
