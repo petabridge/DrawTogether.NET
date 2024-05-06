@@ -10,5 +10,9 @@ public static class DrawingSessionQueries
     
     public sealed record SubscribeToDrawingSession(DrawingSessionId DrawingSessionId) : IDrawingSessionQuery;
     
+    public sealed record SubscribeAcknowledged(DrawingSessionId DrawingSessionId) : IDrawingSessionQuery;
+    
     public sealed record UnsubscribeFromDrawingSession(DrawingSessionId DrawingSessionId) : IDrawingSessionQuery;
+
+    public sealed record UnsubscribeAcknowledged(DrawingSessionId DrawingSessionId) : IDrawingSessionQuery;
 }

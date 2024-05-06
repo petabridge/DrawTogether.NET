@@ -4,6 +4,7 @@ using Akka.Cluster.Sharding;
 using Akka.Event;
 using Akka.Hosting;
 using Akka.Persistence;
+using DrawTogether.Entities;
 using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 
@@ -114,11 +115,13 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
             {
                 _subscribers.Add(Sender);
                 Context.Watch(Sender);
+                Sender.Tell(new DrawingSessionQueries.SubscribeAcknowledged(State.DrawingSessionId));
                 break;
             }
             case DrawingSessionQueries.UnsubscribeFromDrawingSession _:
             {
                 _subscribers.Remove(Sender);
+                Sender.Tell(new DrawingSessionQueries.UnsubscribeAcknowledged(State.DrawingSessionId));
                 break;
             }
             case Terminated terminated:
