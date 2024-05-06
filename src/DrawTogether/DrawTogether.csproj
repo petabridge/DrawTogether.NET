@@ -22,7 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\DrawTogether.Email\DrawTogether.Email.csproj" />
+      <ProjectReference Include="..\DrawTogether.Email\DrawTogether.Email.csproj" />
     </ItemGroup>
 
 </Project>
