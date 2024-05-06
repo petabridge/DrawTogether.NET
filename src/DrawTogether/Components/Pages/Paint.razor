@@ -85,8 +85,6 @@
 
         await DoStartupTasks(linkedCts.Token);
 
-        await base.OnInitializedAsync();
-
         async Task DoStartupTasks(CancellationToken ct)
         {
             var localHandleTask = localActor.Ask<IActorRef>(new LocalDrawingSessionActor.GetLocalActorHandle(DrawingSessionId), cancellationToken: ct);
