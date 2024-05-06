@@ -21,8 +21,8 @@ builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuth
 builder.Services.AddEmailServices<ApplicationUser>(builder.Configuration); // add email services
 
 // if an email provider is not registered, add the no op email provider
-builder.Services.TryAddSingleton<IEmailSender, NoOpEmailSender>();
-builder.Services.TryAddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+// builder.Services.TryAddSingleton<IEmailSender, NoOpEmailSender>();
+// builder.Services.TryAddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 builder.Services.AddAuthentication(options =>
     {

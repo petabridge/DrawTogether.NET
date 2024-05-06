@@ -24,7 +24,7 @@ public sealed class MailGunEmailSender<TUser> : IEmailSender<TUser>, IEmailSende
 
     public Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
-        _logger.LogDebug("Sending email to {Email} with subject {Subject}", email, subject);
+        _logger.LogInformation("Sending email to {Email} with subject {Subject}", email, subject);
         
         var mailMessage = FluentEmail.Core.Email
             .From(_emailSettings.FromAddress, _emailSettings.FromName)
