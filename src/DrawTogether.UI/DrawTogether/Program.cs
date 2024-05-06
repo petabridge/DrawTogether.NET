@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using DrawTogether.Components;
 using DrawTogether.Components.Account;
 using DrawTogether.Data;
+using DrawTogether.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+builder.Services.AddEmailServices(builder.Configuration); // add email services
 
 builder.Services.AddAuthentication(options =>
     {
