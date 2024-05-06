@@ -25,6 +25,7 @@ else
     <table class="table">
         <thead>
         <tr>
+            <th>#</th>
             <th>SessionId</th>
             <th>Active Users</th>
             <th>Last Updated</th>
@@ -32,14 +33,19 @@ else
         </tr>
         </thead>
         <tbody>
-        @foreach (var session in _drawingActivities)
+        @for (var i = 0; i < _drawingActivities.Count; i++)
         {
+            var session = _drawingActivities.ElementAt(i);
+            var printedStr = $"{i+1}";
             var hrefUri = $"paint/{session.Key!.SessionId}";
             <tr>
+                <td>@printedStr</td>
                 <td>@session.Key!.SessionId</td>
                 <td>@session.Value.ActiveUsers</td>
                 <td>@session.Value.LastUpdate</td>
-                <td><MudLink Href="@hrefUri">Join Session!</MudLink></td>
+                <td>
+                    <MudLink Href="@hrefUri">Join Session!</MudLink>
+                </td>
             </tr>
         }
         </tbody>
@@ -68,13 +74,13 @@ else
         // start the subscription
         _ = RunSubscription();
     }
-    
+
     // create subscription
     async Task RunSubscription()
     {
         var source = Source.ActorRef<DrawingActivityUpdate>(100, OverflowStrategy.DropHead);
         var (srcActor, src) = source.PreMaterialize(ActorSystem);
-        
+
         // starts the pump
         allDrawingsActor.Tell(new DrawingIndexQueries.SubscribeToDrawingSessionUpdates(srcActor));
 
@@ -88,10 +94,11 @@ else
             {
                 _drawingActivities[item.DrawingSessionId] = item;
             }
+
             StateHasChanged();
         }
     }
-    
+
     public async ValueTask DisposeAsync()
     {
         await _shutdownCts.CancelAsync();
