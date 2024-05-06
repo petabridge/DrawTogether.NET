@@ -19,8 +19,3 @@ public sealed record ConnectedStroke(StrokeId Id)
     
     public Color StrokeColor { get; init; } = Color.Black;
 }
-
-public sealed class DrawingState
-{
-    
-}

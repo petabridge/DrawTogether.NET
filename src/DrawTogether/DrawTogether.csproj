@@ -22,6 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\DrawTogether.Actors\DrawTogether.Actors.csproj" />
       <ProjectReference Include="..\DrawTogether.Email\DrawTogether.Email.csproj" />
     </ItemGroup>
 

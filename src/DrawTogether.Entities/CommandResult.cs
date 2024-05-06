@@ -15,7 +15,9 @@ public sealed record CommandResult
     
     public string? Message { get; init; }
     
-    public static CommandResult Ok() => new() { Code = ResultCode.Ok };
+    public static readonly CommandResult Ok = new() { Code = ResultCode.Ok };
+    
+    public static readonly CommandResult NoOp = new() { Code = ResultCode.NoOp };
     
     public bool IsError => Code != ResultCode.Ok && Code != ResultCode.NoOp;
 }
