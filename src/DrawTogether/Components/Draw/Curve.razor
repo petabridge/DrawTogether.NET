@@ -1,10 +1,10 @@
-﻿@using DrawTogether.UI.Shared
+﻿@using DrawTogether.Entities.Drawings
 <path d="@PathData(_points)" fill="None" stroke="@Stroke" stroke-width="@StrokeWidth"></path>
 
 @code {
     private Point[] _points { get; set; } = [];
 
-    [Parameter] public List<Point> Points { get; set; } = new();
+    [Parameter] public IReadOnlyList<Point> Points { get; set; } = [];
 
     [Parameter] public int StrokeWidth { get; set; } = 8;
 

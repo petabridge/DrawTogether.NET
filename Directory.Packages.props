@@ -5,14 +5,27 @@
   <!-- Akka.NET Package Versions -->
   <ItemGroup>
     <PackageVersion Include="Akka" Version="1.5.20" />
+    <PackageVersion Include="Akka.Cluster.Hosting" Version="1.5.20" />
     <PackageVersion Include="Akka.Hosting" Version="1.5.20" />
     <PackageVersion Include="Akka.Hosting.TestKit" Version="1.5.20" />
+    <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.13" />
     <PackageVersion Include="Akka.Streams" Version="1.5.20" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="1.5.20" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.4" />
+    <PackageVersion Include="MudBlazor" Version="6.19.1" />
   </ItemGroup>
   <!-- ASP.NET Package Versions -->
   <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.4" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.4" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.4" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.4" />
+  </ItemGroup>
+  <!-- FluentEmail Package Versions -->
+  <ItemGroup>
+    <PackageVersion Include="FluentEmail.Mailgun" Version="3.0.2" />
+    <PackageVersion Include="FluentEmail.Razor" Version="3.0.2" />
   </ItemGroup>
   <!-- OTEL Package Versions -->
   <ItemGroup>

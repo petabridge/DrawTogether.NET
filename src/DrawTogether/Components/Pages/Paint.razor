@@ -1,0 +1,239 @@
+@page "/paint/{sessionId}"
+@inject NavigationManager NavigationManager;
+@using System.Diagnostics
+@using System.Security.Claims
+@using System.Threading.Channels
+@using Akka.Actor
+@using Akka.Hosting
+@using Akka.Util
+@using DrawTogether.Actors.Local
+@using DrawTogether.Components.Draw
+@using DrawTogether.Entities
+@using DrawTogether.Entities.Drawings
+@using DrawTogether.Entities.Drawings.Messages
+@using DrawTogether.Entities.Users
+@using Microsoft.AspNetCore.Authorization
+@using Color = DrawTogether.Entities.Drawings.Color
+@implements IAsyncDisposable;
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
+@inject IRequiredActor<LocalDrawingSessionActor> LocalDrawingSessionActor;
+@attribute [Authorize]
+
+<h3>Paint!</h3>
+
+<ColorPicker ColorValueChanged="UpdateColor"></ColorPicker>
+<CursorPicker CursorSizeChanged="UpdateCursorSize"></CursorPicker>
+
+<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
+         @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
+    <svg width="900" height="500">
+        <Circle radius="@_cursorSize.Value" cursorId="user" cX="@cX" cY="@cY" fillColor="@_color.HexCodeOrColorName" borderColor="@_color.HexCodeOrColorName"/>
+        @foreach (var connectedStroke in Strokes.Values)
+        {
+            <Curve Points="@connectedStroke.Points" Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
+        }
+    </svg>
+</section>
+
+<div id="active-users">
+    <ol>
+        @foreach (var u in ConnectedUsers)
+        {
+            <li>@u</li>
+        }
+    </ol>
+</div>
+
+<p>@mousePointerMessage</p>
+
+<p>@blazorHubDebugMessage</p>
+
+<button id="reset" @onclick="ResetScreen">Clear Screen</button>
+
+@code {
+
+    [Parameter] public string SessionId { get; set; }
+
+    public Dictionary<StrokeId, ConnectedStroke> Strokes { get; set; } = new();
+
+    public HashSet<UserId> ConnectedUsers { get; set; } = [];
+
+    public DateTime LastUpdate { get; set; } = DateTime.UtcNow;
+
+    DrawingSessionId? DrawingSessionId { get; set; }
+
+    private ChannelReader<IDrawingSessionEvent>? _eventStream = null;
+
+    private IActorRef? _localActorHandle;
+    private readonly CancellationTokenSource _shutdownCts = new();
+
+    private ClaimsPrincipal? _user;
+    private UserId? _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
+        _user = authstate.User;
+        _currentUserId = new UserId(_user.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User not authenticated"));
+        _hashedUserId = MurmurHash.StringHash(_currentUserId.IdentityName);
+        DrawingSessionId = new DrawingSessionId(SessionId);
+
+
+        using var startupCts = new CancellationTokenSource(5000);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(startupCts.Token, _shutdownCts.Token);
+        var localActor = await LocalDrawingSessionActor.GetAsync(linkedCts.Token);
+
+        await DoStartupTasks(linkedCts.Token);
+
+        async Task DoStartupTasks(CancellationToken ct)
+        {
+            var localHandleTask = localActor.Ask<IActorRef>(new LocalDrawingSessionActor.GetLocalActorHandle(DrawingSessionId), cancellationToken: ct);
+            var currentStateTask = localActor.Ask<DrawingSessionState>(
+                new DrawingSessionQueries.GetDrawingSessionState(DrawingSessionId), cancellationToken: ct);
+            var eventStreamTask = localActor.Ask<LocalDrawingSessionActor.DrawingChannelResponse>(
+                new LocalDrawingSessionActor.GetDrawingChannel(DrawingSessionId), cancellationToken: ct);
+
+            await Task.WhenAll(localHandleTask, currentStateTask, eventStreamTask);
+
+            _localActorHandle = await localHandleTask;
+            var localState = await currentStateTask;
+            _eventStream = (await eventStreamTask).DrawingChannel;
+
+            // unpack the local state
+            foreach (var stroke in localState.Strokes)
+            {
+                Strokes[stroke.Key] = stroke.Value;
+            }
+
+            foreach (var user in localState.ConnectedUsers)
+            {
+                ConnectedUsers.Add(user);
+            }
+
+            // let the local actor know that the current user has joined the session
+            _localActorHandle.Tell(new LocalPaintProtocol.JoinPaintSession(DrawingSessionId, _currentUserId));
+
+            // start the event loop
+            _ = RunDataPump();
+        }
+    }
+
+    async Task RunDataPump()
+    {
+        Debug.Assert(_eventStream != null, nameof(_eventStream) + " != null");
+        while (!_shutdownCts.IsCancellationRequested && await _eventStream.WaitToReadAsync(_shutdownCts.Token))
+        while (_eventStream.TryRead(out var evt))
+            HandleEvent(evt);
+    }
+
+    private void HandleEvent(IDrawingSessionEvent item)
+    {
+        switch (item)
+        {
+            case DrawingSessionEvents.UserAdded userJoined:
+                ConnectedUsers.Add(userJoined.UserId);
+                break;
+            case DrawingSessionEvents.UserRemoved userLeft:
+                ConnectedUsers.Remove(userLeft.UserId);
+                break;
+            case DrawingSessionEvents.StrokeAdded strokeAdded:
+                Strokes[strokeAdded.Stroke.Id] = strokeAdded.Stroke;
+                break;
+            case DrawingSessionEvents.StrokeRemoved strokeRemoved:
+                Strokes.Remove(strokeRemoved.StrokeId);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(item));
+        }
+
+        LastUpdate = DateTime.UtcNow;
+        StateHasChanged();
+    }
+
+
+    double cX = 110.0d;
+    double cY = 110.0d;
+    private Color _color = new("black");
+    private GreaterThanZeroInteger _cursorSize = new(8);
+
+    private string mousePointerMessage = "foo";
+    private string blazorHubDebugMessage = "bar";
+
+    private readonly int _randomSeed = Random.Shared.Next();
+    private int _strokeIdCounter = 0;
+    private int _hashedUserId;
+
+    private int NextStrokeId()
+    {
+        return _hashedUserId + _randomSeed + _strokeIdCounter++;
+    }
+
+    private StrokeId CurrentStrokeId { get; set; }
+
+    private void CursorDown(MouseEventArgs e)
+    {
+        CurrentStrokeId = new StrokeId(NextStrokeId());
+        var newStroke = new ConnectedStroke(CurrentStrokeId)
+        {
+            StrokeColor = _color,
+            StrokeWidth = _cursorSize,
+            Points = new List<Point> { new(e.OffsetX, e.OffsetY) }
+        };
+
+        _localActorHandle.Tell(new LocalPaintProtocol.CreateConnectedStroke(DrawingSessionId, _currentUserId, newStroke));
+
+        if (e.Buttons == 1)
+        {
+            OnNext(new Point(e.OffsetX, e.OffsetY));
+        }
+    }
+
+    private void OnNext(Point point)
+    {
+        _localActorHandle.Tell(new LocalPaintProtocol.AddPointToConnectedStroke(point, CurrentStrokeId, DrawingSessionId, _currentUserId));
+    }
+
+    private void CursorMove(MouseEventArgs e)
+    {
+        mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
+        cX = e.OffsetX;
+        cY = e.OffsetY;
+        mousePointerMessage = $"Moving circle to {e.OffsetX},{e.OffsetY} [button pressed? {e.Buttons}]";
+        if (e.Buttons == 1)
+        {
+            OnNext(new Point(e.OffsetX, e.OffsetY));
+        }
+    }
+
+    private void CursorUp(MouseEventArgs e)
+    {
+        if (e.Buttons == 1)
+        {
+            OnNext(new Point(e.OffsetX, e.OffsetY));
+        }
+    }
+
+    private void UpdateColor(string color)
+    {
+        _color = new Color(color);
+    }
+
+    private void UpdateCursorSize(int cursorSize)
+    {
+        _cursorSize = new GreaterThanZeroInteger(cursorSize);
+    }
+
+    private void ResetScreen()
+    {
+        //strokes.Clear();
+    }
+
+
+    public async ValueTask DisposeAsync()
+    {
+        await _shutdownCts.CancelAsync();
+        if (DrawingSessionId != null && _currentUserId is not null) _localActorHandle.Tell(new LocalPaintProtocol.LeavePaintSession(DrawingSessionId, _currentUserId));
+        _shutdownCts.Dispose();
+    }
+
+}
