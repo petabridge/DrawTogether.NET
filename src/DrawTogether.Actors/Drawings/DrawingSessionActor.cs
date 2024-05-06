@@ -188,7 +188,8 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
 
 public static class DrawingSessionActorExtensions
 {
-    public static AkkaConfigurationBuilder AddDrawingSessionActor(this AkkaConfigurationBuilder builder, string clusterRoleName = ClusterConstants.DrawStateRoleName)
+    public static AkkaConfigurationBuilder AddDrawingSessionActor(this AkkaConfigurationBuilder builder,
+        string clusterRoleName = ClusterConstants.DrawStateRoleName)
     {
         builder.WithShardRegion<DrawingSessionActor>("drawing-session",
             (system, registry, resolver) => s => resolver.Props<DrawingSessionActor>(s),
@@ -197,7 +198,8 @@ public static class DrawingSessionActorExtensions
                 StateStoreMode = StateStoreMode.DData,
                 RememberEntities = true,
                 RememberEntitiesStore = RememberEntitiesStore.Eventsourced,
-                Role = clusterRoleName
+                Role = clusterRoleName,
+                DistributedData = { Durable = new DurableOptions() { Keys = [] } } // disable persistence
             });
         return builder;
     }
