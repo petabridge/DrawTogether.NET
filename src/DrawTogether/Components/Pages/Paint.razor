@@ -74,6 +74,7 @@
 
     private IActorRef? _localActorHandle;
     private readonly CancellationTokenSource _shutdownCts = new();
+    private CancellationTokenSource? _readDoneCts;
 
     private ClaimsPrincipal? _user;
     private UserId? _currentUserId;
@@ -104,7 +105,9 @@
 
             _localActorHandle = await localHandleTask;
             var localState = await currentStateTask;
-            _eventStream = (await eventStreamTask).DrawingChannel;
+            var readTools = await eventStreamTask;
+            _eventStream = readTools.DrawingChannel;
+            _readDoneCts = readTools.DoneReading;
 
             // unpack the local state
             foreach (var stroke in localState.Strokes)
@@ -134,6 +137,9 @@
             HandleEvent(evt);
             await InvokeAsync(StateHasChanged);
         }
+
+        // signal to local actor that we are done reading
+        _readDoneCts?.CancelAsync();
            
 
         // navigate us to home if the stream dies out 
@@ -224,6 +230,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        _readDoneCts?.CancelAsync();
+        _readDoneCts?.Dispose();
         await _shutdownCts.CancelAsync();
         if (DrawingSessionId != null && _currentUserId is not null) _localActorHandle.Tell(new LocalPaintProtocol.LeavePaintSession(DrawingSessionId, _currentUserId));
         _shutdownCts.Dispose();

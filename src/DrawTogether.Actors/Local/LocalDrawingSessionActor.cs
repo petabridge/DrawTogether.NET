@@ -58,12 +58,15 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     /// </summary>
     public sealed class DrawingChannelResponse : IDeadLetterSuppression, INoSerializationVerificationNeeded
     {
-        public DrawingChannelResponse(ChannelReader<IDrawingSessionEvent> drawingChannel)
+        public DrawingChannelResponse(ChannelReader<IDrawingSessionEvent> drawingChannel, CancellationTokenSource doneReading)
         {
             DrawingChannel = drawingChannel;
+            DoneReading = doneReading;
         }
 
         public ChannelReader<IDrawingSessionEvent> DrawingChannel { get; }
+        
+        public CancellationTokenSource DoneReading { get; }
     }
     
     public sealed class GetLocalActorHandle : IDeadLetterSuppression, INoSerializationVerificationNeeded,
@@ -77,10 +80,20 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         public DrawingSessionId DrawingSessionId { get; }
     }
 
+    private class LocalSubscriberDied : IDeadLetterSuppression, INoSerializationVerificationNeeded
+    {
+        public LocalSubscriberDied(IActorRef subscriber)
+        {
+            Subscriber = subscriber;
+        }
+
+        public IActorRef Subscriber { get; }
+    }
+
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _drawingSessionActor;
     private readonly DrawingSessionId _drawingSessionId;
-    private readonly Channel<IDrawingSessionEvent> _drawingChannel = Channel.CreateUnbounded<IDrawingSessionEvent>();
+    private readonly HashSet<IActorRef> _clientSessions = new();
     private readonly IMaterializer _materializer = Context.System.Materializer();
     private IActorRef _debouncer = ActorRefs.Nobody;
 
@@ -113,18 +126,26 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                     _log.Warning("Failed to send commands to DrawingSession [{0}]: {1}", _drawingSessionId,
                         cmdResult.Message);
                 }
-
                 break;
             case IDrawingSessionEvent drawingEvent: // live updates from the server (source of truth)
                 // publish the event to our channel
-                _drawingChannel.Writer.TryWrite(drawingEvent);
+                PublishEvent(drawingEvent);
                 break;
             case DrawingSessionQueries.GetDrawingSessionState:
                 // forward message to the ShardRegion directly
                 _drawingSessionActor.Forward(message);
                 break;
             case GetDrawingChannel:
-                Sender.Tell(new DrawingChannelResponse(_drawingChannel.Reader));
+                var cts = new CancellationTokenSource();
+                var (sourceRef, src) = Source.ActorRef<IDrawingSessionEvent>(1000, OverflowStrategy.DropHead)
+                    .PreMaterialize(_materializer);
+                var (channel, channelSink) = ChannelSink.AsReader<IDrawingSessionEvent>(100, true, BoundedChannelFullMode.Wait)
+                    .PreMaterialize(_materializer);
+                src.Via(cts.Token.AsFlow<IDrawingSessionEvent>()) // lets the client kill the channel
+                    .To(channelSink).Run(_materializer);
+                Context.WatchWith(sourceRef, new LocalSubscriberDied(sourceRef));
+                _clientSessions.Add(sourceRef);
+                Sender.Tell(new DrawingChannelResponse(channel, cts));
                 break;
             case DrawingSessionQueries.SubscribeAcknowledged subscribed:
                 _log.Info("Subscribed to DrawingSession [{0}]", _drawingSessionId);
@@ -159,7 +180,6 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     
     private List<IDrawingSessionCommand> TransmitActions(IReadOnlyList<AddPointToConnectedStroke> actions)
     {
-        
         // group all the actions by user
         var userActions = actions.GroupBy(a => a.UserId).ToList();
 
@@ -181,6 +201,12 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         }
 
         return drawSessionCommands;
+    }
+    
+    private void PublishEvent(IDrawingSessionEvent drawingEvent)
+    {
+        foreach(var client in _clientSessions)
+            client.Tell(drawingEvent);
     }
 
     public ITimerScheduler Timers { get; set; } = null!;
@@ -220,11 +246,6 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                         result.Message);
                 }
             }, _materializer);
-    }
-
-    protected override void PostStop()
-    {
-        _drawingChannel.Writer.TryComplete();
     }
 
     private void AttemptToSubscribe()
