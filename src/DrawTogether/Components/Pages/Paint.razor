@@ -22,13 +22,13 @@
 
 <h3>Paint with [@ConnectedUsers.Count] People</h3>
 <MudPaper Class="align-content-center d-flex" Elevation="0">
-    <MudText Typo="Typo.h6">Connected Users:</MudText>
-    <ul class="list-inline">
-    @foreach (var user in ConnectedUsers)
-    {
-        <li class="list-inline-item">@user.IdentityName</li>
-    }
-    </ul>
+    <MudStack Row>
+        <MudText Typo="Typo.h6">Connected Users:</MudText>
+        @foreach (var user in ConnectedUsers)
+        {
+            <MudText Typo="Typo.body1">@user.IdentityName</MudText>
+        }
+    </MudStack>
 </MudPaper>
 <MudGrid>
     <MudItem xs="2">
@@ -192,7 +192,7 @@
 
     private void OnNext(Point point)
     {
-        _localActorHandle.Tell(new LocalPaintProtocol.AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
+        _localActorHandle?.Tell(new LocalPaintProtocol.AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
     }
 
     private void CursorMove(MouseEventArgs e)

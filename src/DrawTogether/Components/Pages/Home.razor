@@ -22,34 +22,20 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-        <tr>
-            <th>#</th>
-            <th>SessionId</th>
-            <th>Active Users</th>
-            <th>Last Updated</th>
-            <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        @for (var i = 0; i < _drawingActivities.Count; i++)
-        {
-            var session = _drawingActivities.ElementAt(i);
-            var printedStr = $"{i+1}";
-            var hrefUri = $"paint/{session.Key!.SessionId}";
-            <tr>
-                <td>@printedStr</td>
-                <td>@session.Key!.SessionId</td>
-                <td>@session.Value.ActiveUsers</td>
-                <td>@session.Value.LastUpdate</td>
-                <td>
-                    <MudLink Href="@hrefUri">Join Session!</MudLink>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="align-content-start">
+        <MudDataGrid Items="_drawingActivities.Values" TItem="DrawingActivityUpdate">
+            <Columns>
+                <PropertyColumn Property="x => x.DrawingSessionId.SessionId" Title="Session Id"/>
+                <PropertyColumn Property="x => x.ActiveUsers" Title="Active Users"/>
+                <PropertyColumn Property="x => x.LastUpdate" Title="Last Update"/>
+                <TemplateColumn CellClass="d-flex justify-end">
+                    <CellTemplate>
+                        <MudLink Href="@string.Format("paint/{0}", context.Item.DrawingSessionId.SessionId)">Join Session!</MudLink>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+        </MudDataGrid>
+    </MudContainer>
 }
 
 @code{
