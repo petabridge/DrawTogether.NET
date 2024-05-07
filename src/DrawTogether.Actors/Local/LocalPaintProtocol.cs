@@ -15,6 +15,12 @@ public static class LocalPaintProtocol
        UserId UserId { get; } 
     }
     
+    public sealed class ClearDrawingSession(DrawingSessionId drawingSessionId, UserId userId) : IPaintSessionMessage
+    {
+        public UserId UserId { get; } = userId;
+        public DrawingSessionId DrawingSessionId { get; } = drawingSessionId;
+    }
+    
     public sealed class JoinPaintSession(DrawingSessionId drawingSessionId, UserId userId) : IPaintSessionMessage
     {
         public UserId UserId { get; } = userId;

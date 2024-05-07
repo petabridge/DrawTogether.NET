@@ -98,8 +98,14 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
             case AddPointToConnectedStroke:
                 _debouncer.Tell(message);
                 break;
-            case IPaintSessionMessage paintMessage:
-                _drawingSessionActor.Tell(paintMessage);
+            case JoinPaintSession paintMessage:
+                _drawingSessionActor.Tell(new DrawingSessionCommands.AddUser(_drawingSessionId, paintMessage.UserId));
+                break;
+            case LeavePaintSession paintMessage:
+                _drawingSessionActor.Tell(new DrawingSessionCommands.RemoveUser(_drawingSessionId, paintMessage.UserId));
+                break;
+            case ClearDrawingSession clearMessage:
+                _drawingSessionActor.Tell(new DrawingSessionCommands.ClearStrokes(_drawingSessionId));
                 break;
             case CommandResult cmdResult:
                 if (cmdResult.IsError)
@@ -178,7 +184,6 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     }
 
     public ITimerScheduler Timers { get; set; } = null!;
-    public IStash Stash { get; set; } = null!;
 
     protected override void PreStart()
     {
@@ -189,7 +194,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
             .PreMaterialize(_materializer);
 
         _debouncer = sourceRef;
-        source.GroupedWithin(10, TimeSpan.FromMilliseconds(75))
+        source.GroupedWithin(25, TimeSpan.FromMilliseconds(75))
             .Select(c => TransmitActions(c.ToList()))
             .SelectMany(c => c)
             .SelectAsync(1, async c =>
