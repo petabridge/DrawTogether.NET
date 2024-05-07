@@ -20,8 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Serialization\Proto\DrawingProtocol.proto" />
-      <Protobuf Include="Serialization\Proto\DrawingProtocol.proto" />
+      <Protobuf Include="Serialization\Proto\DrawingProtocol.proto" GrpcServices="None" />
     </ItemGroup>
 
 </Project>
