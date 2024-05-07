@@ -1,14 +1,29 @@
 ﻿using System.Collections.Immutable;
 using Akka.Actor;
+using Akka.Hosting;
 using Akka.Serialization;
+using DrawTogether.Actors.Serialization.Proto;
 using DrawTogether.Entities;
 using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using ConnectedStroke = DrawTogether.Entities.Drawings.ConnectedStroke;
+using DrawingSessionState = DrawTogether.Entities.Drawings.DrawingSessionState;
+using Point = DrawTogether.Entities.Drawings.Point;
+using Type = System.Type;
 
 namespace DrawTogether.Actors.Serialization;
+
+public static class CustomSerializationAkkaExtensions
+{
+    public static AkkaConfigurationBuilder AddDrawingProtocolSerializer(this AkkaConfigurationBuilder builder)
+    {
+        return builder.WithCustomSerializer("drawing", new[] { typeof(IWithDrawingSessionId) },
+            system => new DrawingProtocolSerializer(system));
+    }
+}
 
 public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
 {
@@ -20,7 +35,6 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
     private const string UserRemovedManifest = "ur";
     private const string DrawingSessionClosedManifest = "dc";
     private const string GetDrawingSessionStateManifest = "gs";
-    private const string GetDrawingSessionUsersManifest = "gu";
     private const string SubscribeToDrawingSessionManifest = "su";
     private const string SubscribeAcknowledgedManifest = "sak";
     private const string UnsubscribeFromDrawingSessionManifest = "uu";
@@ -32,6 +46,9 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
     private const string RemoveUserManifest = "ru";
     private const string DrawingActivityUpdateManifest = "da";
     private const string DrawingSessionStateManifest = "ds";
+
+    // arbitrary id but not within 0-100, which is reserved by Akka.NET
+    public override int Identifier => 481;
 
     public DrawingProtocolSerializer(ExtendedActorSystem system) : base(system)
     {
@@ -101,7 +118,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoSubscribeToDrawingSessionState;
     }
-    
+
     private Proto.SubscribeAcknowledged ToProto(DrawingSessionQueries.SubscribeAcknowledged asCmd)
     {
         var protoSubscribeAcknowledged = new Proto.SubscribeAcknowledged()
@@ -110,7 +127,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoSubscribeAcknowledged;
     }
-    
+
     private Proto.UnsubscribeFromDrawingSessionState ToProto(DrawingSessionQueries.UnsubscribeFromDrawingSession asCmd)
     {
         var protoUnsubscribeFromDrawingSessionState = new Proto.UnsubscribeFromDrawingSessionState()
@@ -119,7 +136,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoUnsubscribeFromDrawingSessionState;
     }
-    
+
     private Proto.UnsubscribeAcknowledged ToProto(DrawingSessionQueries.UnsubscribeAcknowledged asCmd)
     {
         var protoUnsubscribeAcknowledged = new Proto.UnsubscribeAcknowledged()
@@ -128,7 +145,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoUnsubscribeAcknowledged;
     }
-    
+
 
     private Proto.AddStroke ToProto(DrawingSessionCommands.AddStroke asCmd)
     {
@@ -139,7 +156,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoAddStroke;
     }
-    
+
     private Proto.RemoveStroke ToProto(DrawingSessionCommands.RemoveStroke rsCmd)
     {
         var protoRemoveStroke = new Proto.RemoveStroke()
@@ -149,7 +166,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoRemoveStroke;
     }
-    
+
     private Proto.ClearStrokes ToProto(DrawingSessionCommands.ClearStrokes csCmd)
     {
         var protoClearStrokes = new Proto.ClearStrokes()
@@ -158,7 +175,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoClearStrokes;
     }
-    
+
     private Proto.AddUser ToProto(DrawingSessionCommands.AddUser auCmd)
     {
         var protoAddUser = new Proto.AddUser()
@@ -168,7 +185,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoAddUser;
     }
-    
+
     private Proto.RemoveUser ToProto(DrawingSessionCommands.RemoveUser ruCmd)
     {
         var protoRemoveUser = new Proto.RemoveUser()
@@ -178,7 +195,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoRemoveUser;
     }
-    
+
     private Proto.GetDrawingSessionState ToProto(DrawingSessionQueries.GetDrawingSessionState gs)
     {
         var protoGetDrawingSessionState = new Proto.GetDrawingSessionState()
@@ -187,8 +204,8 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoGetDrawingSessionState;
     }
-    
-  
+
+
     private Proto.AddStroke ToProto(DrawingSessionEvents.StrokeAdded stroke)
     {
         var protoStrokeAdded = new Proto.AddStroke()
@@ -208,7 +225,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoStrokeRemoved;
     }
-    
+
     private Proto.ClearStrokes ToProto(DrawingSessionEvents.StrokesCleared strokes)
     {
         var protoStrokesCleared = new Proto.ClearStrokes()
@@ -217,7 +234,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoStrokesCleared;
     }
-    
+
     private Proto.AddUser ToProto(DrawingSessionEvents.UserAdded user)
     {
         var protoUserAdded = new Proto.AddUser()
@@ -227,7 +244,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoUserAdded;
     }
-    
+
     private Proto.RemoveUser ToProto(DrawingSessionEvents.UserRemoved user)
     {
         var protoUserRemoved = new Proto.RemoveUser()
@@ -237,7 +254,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
         };
         return protoUserRemoved;
     }
-    
+
     private Proto.SessionClosed ToProto(DrawingSessionEvents.DrawingSessionClosed closed)
     {
         var protoDrawingSessionClosed = new Proto.SessionClosed()
@@ -249,7 +266,126 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
 
     public override object FromBinary(byte[] bytes, string manifest)
     {
-        throw new NotImplementedException();
+        return manifest switch
+        {
+            StrokeAddedManifest => FromProtoStrokeAdded(Proto.AddStroke.Parser.ParseFrom(bytes)),
+            StrokeRemovedManifest => FromProtoStrokeRemoved(Proto.RemoveStroke.Parser.ParseFrom(bytes)),
+            StrokesClearedManifest => FromProtoStrokesCleared(Proto.ClearStrokes.Parser.ParseFrom(bytes)),
+            UserAddedManifest => FromProtoUserAdded(Proto.AddUser.Parser.ParseFrom(bytes)),
+            UserRemovedManifest => FromProtoUserRemoved(Proto.RemoveUser.Parser.ParseFrom(bytes)),
+            DrawingSessionClosedManifest => FromProtoSessionClosed(Proto.SessionClosed.Parser.ParseFrom(bytes)),
+            DrawingActivityUpdateManifest => FromProto(Proto.DrawingActivityUpdated.Parser.ParseFrom(bytes)),
+            GetDrawingSessionStateManifest => FromProto(Proto.GetDrawingSessionState.Parser.ParseFrom(bytes)),
+            SubscribeToDrawingSessionManifest =>
+                FromProto(Proto.SubscribeToDrawingSessionState.Parser.ParseFrom(bytes)),
+            SubscribeAcknowledgedManifest => FromProto(Proto.SubscribeAcknowledged.Parser.ParseFrom(bytes)),
+            UnsubscribeFromDrawingSessionManifest => FromProto(
+                Proto.UnsubscribeFromDrawingSessionState.Parser.ParseFrom(bytes)),
+            UnsubscribeAcknowledgedManifest => FromProto(Proto.UnsubscribeAcknowledged.Parser.ParseFrom(bytes)),
+            AddStrokeManifest => FromProto(Proto.AddStroke.Parser.ParseFrom(bytes)),
+            RemoveStrokeManifest => FromProto(Proto.RemoveStroke.Parser.ParseFrom(bytes)),
+            ClearStrokesManifest => FromProto(Proto.ClearStrokes.Parser.ParseFrom(bytes)),
+            AddUserManifest => FromProto(Proto.AddUser.Parser.ParseFrom(bytes)),
+            RemoveUserManifest => FromProto(Proto.RemoveUser.Parser.ParseFrom(bytes)),
+            DrawingSessionStateManifest => FromProto(Proto.DrawingSessionState.Parser.ParseFrom(bytes)),
+            _ => throw new ArgumentException($"Can't deserialize object with manifest {manifest}")
+        };
+    }
+
+    private DrawingSessionCommands.RemoveUser FromProto(RemoveUser protoStroke)
+    {
+        return new DrawingSessionCommands.RemoveUser(new DrawingSessionId(protoStroke.DrawingSessionId),
+            new UserId(protoStroke.UserId));
+    }
+
+    private DrawingSessionCommands.AddUser FromProto(AddUser protoStroke)
+    {
+        return new DrawingSessionCommands.AddUser(new DrawingSessionId(protoStroke.DrawingSessionId),
+            new UserId(protoStroke.UserId));
+    }
+
+    private DrawingSessionCommands.ClearStrokes FromProto(ClearStrokes protoStroke)
+    {
+        return new DrawingSessionCommands.ClearStrokes(new DrawingSessionId(protoStroke.DrawingSessionId));
+    }
+
+    private DrawingSessionCommands.RemoveStroke FromProto(RemoveStroke protoStroke)
+    {
+        return new DrawingSessionCommands.RemoveStroke(new DrawingSessionId(protoStroke.DrawingSessionId),
+            new StrokeId(protoStroke.StrokeId));
+    }
+
+    private DrawingSessionCommands.AddStroke FromProto(AddStroke protoStroke)
+    {
+        return new DrawingSessionCommands.AddStroke(new DrawingSessionId(protoStroke.DrawingSessionId),
+            FromProto(protoStroke.ConnectedStroke));
+    }
+
+    private DrawingSessionQueries.UnsubscribeAcknowledged FromProto(UnsubscribeAcknowledged protoStroke)
+    {
+        return new DrawingSessionQueries.UnsubscribeAcknowledged(new DrawingSessionId(protoStroke.DrawingSessionId));
+    }
+
+    private DrawingSessionQueries.UnsubscribeFromDrawingSession FromProto(
+        UnsubscribeFromDrawingSessionState protoStroke)
+    {
+        return new DrawingSessionQueries.UnsubscribeFromDrawingSession(
+            new DrawingSessionId(protoStroke.DrawingSessionId));
+    }
+
+    private DrawingSessionQueries.SubscribeAcknowledged FromProto(SubscribeAcknowledged protoStroke)
+    {
+        return new DrawingSessionQueries.SubscribeAcknowledged(new DrawingSessionId(protoStroke.DrawingSessionId));
+    }
+
+    private DrawingSessionQueries.SubscribeToDrawingSession FromProto(SubscribeToDrawingSessionState protoStroke)
+    {
+        return new DrawingSessionQueries.SubscribeToDrawingSession(new DrawingSessionId(protoStroke.DrawingSessionId));
+    }
+
+    private DrawingSessionQueries.GetDrawingSessionState FromProto(GetDrawingSessionState protoStroke)
+    {
+        return new DrawingSessionQueries.GetDrawingSessionState(new DrawingSessionId(protoStroke.DrawingSessionId));
+    }
+
+    private DrawingActivityUpdate FromProto(DrawingActivityUpdated protoStroke)
+    {
+        return new DrawingActivityUpdate(new DrawingSessionId(protoStroke.DrawingSessionId), protoStroke.ActiveUsers,
+            protoStroke.LastUpdated.ToDateTime(), protoStroke.IsRemoved);
+    }
+
+    private DrawingSessionEvents.DrawingSessionClosed FromProtoSessionClosed(SessionClosed parseFrom)
+    {
+        return new DrawingSessionEvents.DrawingSessionClosed(new DrawingSessionId(parseFrom.DrawingSessionId));
+    }
+
+    private DrawingSessionEvents.UserRemoved FromProtoUserRemoved(RemoveUser parseFrom)
+    {
+        return new DrawingSessionEvents.UserRemoved(new DrawingSessionId(parseFrom.DrawingSessionId),
+            new UserId(parseFrom.UserId));
+    }
+
+    private DrawingSessionEvents.UserAdded FromProtoUserAdded(AddUser parseFrom)
+    {
+        return new DrawingSessionEvents.UserAdded(new DrawingSessionId(parseFrom.DrawingSessionId),
+            new UserId(parseFrom.UserId));
+    }
+
+    private DrawingSessionEvents.StrokesCleared FromProtoStrokesCleared(ClearStrokes parseFrom)
+    {
+        return new DrawingSessionEvents.StrokesCleared(new DrawingSessionId(parseFrom.DrawingSessionId));
+    }
+
+    private DrawingSessionEvents.StrokeRemoved FromProtoStrokeRemoved(RemoveStroke parseFrom)
+    {
+        return new DrawingSessionEvents.StrokeRemoved(new DrawingSessionId(parseFrom.DrawingSessionId),
+            new StrokeId(parseFrom.StrokeId));
+    }
+
+    private DrawingSessionEvents.StrokeAdded FromProtoStrokeAdded(AddStroke parseFrom)
+    {
+        return new DrawingSessionEvents.StrokeAdded(new DrawingSessionId(parseFrom.DrawingSessionId),
+            FromProto(parseFrom.ConnectedStroke));
     }
 
     public override string Manifest(object o)
