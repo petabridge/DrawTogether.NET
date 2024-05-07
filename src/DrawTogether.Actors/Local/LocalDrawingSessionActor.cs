@@ -4,10 +4,12 @@ using Akka.Event;
 using Akka.Hosting;
 using Akka.Streams;
 using Akka.Streams.Dsl;
+using Akka.Util;
 using DrawTogether.Actors.Drawings;
 using DrawTogether.Entities;
 using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
+using DrawTogether.Entities.Users;
 using static DrawTogether.Actors.Local.LocalPaintProtocol;
 
 namespace DrawTogether.Actors.Local;
@@ -93,7 +95,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     {
         switch (message)
         {
-            case AddPointToConnectedStroke or CreateConnectedStroke:
+            case AddPointToConnectedStroke:
                 _debouncer.Tell(message);
                 break;
             case IPaintSessionMessage paintMessage:
@@ -140,30 +142,36 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                 break;
         }
     }
+    
+    private readonly int _randomSeed = Random.Shared.Next();
+    private int _strokeIdCounter = 0;
 
-    private List<IDrawingSessionCommand> TransmitActions(IReadOnlyList<IPaintSessionMessage> actions)
+    private int NextStrokeId(UserId userId)
     {
-        var createActions = actions.Where(a => a is CreateConnectedStroke)
-            .Select(a => ((CreateConnectedStroke)a).ConnectedStroke)
-            .ToArray();
+        return MurmurHash.StringHash(userId.IdentityName) + _randomSeed + _strokeIdCounter++;
+    }
+    
+    private List<IDrawingSessionCommand> TransmitActions(IReadOnlyList<AddPointToConnectedStroke> actions)
+    {
+        
+        // group all the actions by user
+        var userActions = actions.GroupBy(a => a.UserId).ToList();
 
-        var addActions = actions.OfType<AddPointToConnectedStroke>().ToArray();
-
-        _log.Info("BATCHED {0} create actions and {1} add actions", createActions.Length, addActions.Length);
+        _log.Info("BATCHED {0} create actions from {1} users", actions.Count, userActions.Count);
 
         var drawSessionCommands = new List<IDrawingSessionCommand>();
 
-        foreach (var create in createActions)
+        foreach (var userStuff in userActions)
         {
-            var allPoints = create.Points.ToList();
-
-            foreach (var a in addActions.Where(a => a.StrokeId == create.Id))
+            var userId = userStuff.Key;
+            var connectedStroke = new ConnectedStroke(new StrokeId(NextStrokeId(userId)))
             {
-                allPoints.Add(a.Point);
-            }
-
-            drawSessionCommands.Add(new DrawingSessionCommands.AddStroke(_drawingSessionId,
-                create with { Points = allPoints }));
+                Points = userStuff.Select(a => a.Point).ToList(),
+                StrokeColor = userStuff.First().StrokeColor,
+                StrokeWidth = userStuff.First().StrokeWidth
+            };
+            
+            drawSessionCommands.Add(new DrawingSessionCommands.AddStroke(_drawingSessionId, connectedStroke));
         }
 
         return drawSessionCommands;
@@ -177,11 +185,11 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         AttemptToSubscribe();
 
         Context.SetReceiveTimeout(TimeSpan.FromMinutes(2));
-        var (sourceRef, source) = Source.ActorRef<IPaintSessionMessage>(1000, OverflowStrategy.DropHead)
+        var (sourceRef, source) = Source.ActorRef<AddPointToConnectedStroke>(1000, OverflowStrategy.DropHead)
             .PreMaterialize(_materializer);
 
         _debouncer = sourceRef;
-        source.GroupedWithin(100, TimeSpan.FromMilliseconds(75))
+        source.GroupedWithin(10, TimeSpan.FromMilliseconds(75))
             .Select(c => TransmitActions(c.ToList()))
             .SelectMany(c => c)
             .SelectAsync(1, async c =>

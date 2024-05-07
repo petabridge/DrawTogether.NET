@@ -75,7 +75,6 @@
         var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
         _user = authstate.User;
         _currentUserId = new UserId(_user.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User not authenticated"));
-        _hashedUserId = MurmurHash.StringHash(_currentUserId.IdentityName);
         DrawingSessionId = new DrawingSessionId(SessionId);
 
 
@@ -159,29 +158,8 @@
     private string mousePointerMessage = "foo";
     private string blazorHubDebugMessage = "bar";
 
-    private readonly int _randomSeed = Random.Shared.Next();
-    private int _strokeIdCounter = 0;
-    private int _hashedUserId;
-
-    private int NextStrokeId()
-    {
-        return _hashedUserId + _randomSeed + _strokeIdCounter++;
-    }
-
-    private StrokeId CurrentStrokeId { get; set; }
-
     private void CursorDown(MouseEventArgs e)
     {
-        CurrentStrokeId = new StrokeId(NextStrokeId());
-        var newStroke = new ConnectedStroke(CurrentStrokeId)
-        {
-            StrokeColor = _color,
-            StrokeWidth = _cursorSize,
-            Points = new List<Point> { new(e.OffsetX, e.OffsetY) }
-        };
-
-        _localActorHandle.Tell(new LocalPaintProtocol.CreateConnectedStroke(DrawingSessionId, _currentUserId, newStroke));
-
         if (e.Buttons == 1)
         {
             OnNext(new Point(e.OffsetX, e.OffsetY));
@@ -190,7 +168,7 @@
 
     private void OnNext(Point point)
     {
-        _localActorHandle.Tell(new LocalPaintProtocol.AddPointToConnectedStroke(point, CurrentStrokeId, DrawingSessionId, _currentUserId));
+        _localActorHandle.Tell(new LocalPaintProtocol.AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
     }
 
     private void CursorMove(MouseEventArgs e)
