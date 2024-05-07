@@ -22,13 +22,13 @@
 
 <h3>Paint with [@ConnectedUsers.Count] People</h3>
 <MudPaper Class="align-content-center d-flex" Elevation="0">
-    <MudText Typo="Typo.h6">Connected Users:</MudText>
-    <ul class="list-inline">
-    @foreach (var user in ConnectedUsers)
-    {
-        <li class="list-inline-item">@user.IdentityName</li>
-    }
-    </ul>
+    <MudStack Row>
+        <MudText Typo="Typo.h6">Connected Users:</MudText>
+        @foreach (var user in ConnectedUsers)
+        {
+            <MudText Typo="Typo.body1">@user.IdentityName</MudText>
+        }
+    </MudStack>
 </MudPaper>
 <MudGrid>
     <MudItem xs="2">
@@ -74,6 +74,7 @@
 
     private IActorRef? _localActorHandle;
     private readonly CancellationTokenSource _shutdownCts = new();
+    private CancellationTokenSource? _readDoneCts;
 
     private ClaimsPrincipal? _user;
     private UserId? _currentUserId;
@@ -104,7 +105,9 @@
 
             _localActorHandle = await localHandleTask;
             var localState = await currentStateTask;
-            _eventStream = (await eventStreamTask).DrawingChannel;
+            var readTools = await eventStreamTask;
+            _eventStream = readTools.DrawingChannel;
+            _readDoneCts = readTools.DoneReading;
 
             // unpack the local state
             foreach (var stroke in localState.Strokes)
@@ -134,6 +137,9 @@
             HandleEvent(evt);
             await InvokeAsync(StateHasChanged);
         }
+
+        // signal to local actor that we are done reading
+        _readDoneCts?.CancelAsync();
            
 
         // navigate us to home if the stream dies out 
@@ -186,7 +192,7 @@
 
     private void OnNext(Point point)
     {
-        _localActorHandle.Tell(new LocalPaintProtocol.AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
+        _localActorHandle?.Tell(new LocalPaintProtocol.AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
     }
 
     private void CursorMove(MouseEventArgs e)
@@ -224,6 +230,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        _readDoneCts?.CancelAsync();
+        _readDoneCts?.Dispose();
         await _shutdownCts.CancelAsync();
         if (DrawingSessionId != null && _currentUserId is not null) _localActorHandle.Tell(new LocalPaintProtocol.LeavePaintSession(DrawingSessionId, _currentUserId));
         _shutdownCts.Dispose();
