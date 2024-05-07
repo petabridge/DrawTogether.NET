@@ -31,7 +31,7 @@
                 <MudSlider Value="@_cursorSize.Value" ValueLabel="true" Min="1" Max="50" ValueChanged="@((int value) => UpdateCursorSize(value))">Cursor Size</MudSlider>
             </MudPaper>
         </MudStack>
-    </MudItem> 
+    </MudItem>
     <MudItem xs="10">
         <section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
                  @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
@@ -45,9 +45,6 @@
         </section>
     </MudItem>
 </MudGrid>
-
-
-
 
 
 <div id="active-users">
@@ -138,6 +135,9 @@
         while (!_shutdownCts.IsCancellationRequested && await _eventStream.WaitToReadAsync(_shutdownCts.Token))
         while (_eventStream.TryRead(out var evt))
             HandleEvent(evt);
+
+        // navigate us to home if the stream dies out 
+        NavigationManager.NavigateTo("/");
     }
 
     private void HandleEvent(IDrawingSessionEvent item)
@@ -209,7 +209,7 @@
             OnNext(new Point(e.OffsetX, e.OffsetY));
         }
     }
-    
+
     private void UpdateCursorSize(int cursorSize)
     {
         _cursorSize = new GreaterThanZeroInteger(cursorSize);
