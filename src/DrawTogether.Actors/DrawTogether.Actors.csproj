@@ -19,4 +19,9 @@
       <ProjectReference Include="..\DrawTogether.Entities\DrawTogether.Entities.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="Serialization\Proto\DrawingProtocol.proto" />
+      <Protobuf Include="Serialization\Proto\DrawingProtocol.proto" />
+    </ItemGroup>
+
 </Project>
