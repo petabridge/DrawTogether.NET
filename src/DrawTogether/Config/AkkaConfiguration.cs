@@ -6,6 +6,7 @@ using Akka.Remote.Hosting;
 using DrawTogether.Actors;
 using DrawTogether.Actors.Drawings;
 using DrawTogether.Actors.Local;
+using DrawTogether.Actors.Serialization;
 using LinqToDB;
 
 namespace DrawTogether.Config;
@@ -29,6 +30,7 @@ public static class AkkaConfiguration
         {
             builder.WithRemoting(akkaSettings.RemoteOptions)
                 .WithClustering(akkaSettings.ClusterOptions)
+                .AddDrawingProtocolSerializer()
                 .WithSqlPersistence(
                     connectionString: connectionString,
                     providerName: ProviderName.SqlServer2022,

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Text;
 using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
 using static DrawTogether.Entities.Drawings.Messages.DrawingSessionCommands;
@@ -13,8 +14,31 @@ public sealed record DrawingSessionState(DrawingSessionId DrawingSessionId) : IW
     public ImmutableHashSet<UserId> ConnectedUsers { get; init; } = ImmutableHashSet<UserId>.Empty;
 
     public DateTime LastUpdate { get; init; } = DateTime.UtcNow;
-    
+
     public bool IsEmpty => Strokes.IsEmpty && ConnectedUsers.IsEmpty;
+
+    public bool Equals(DrawingSessionState? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return LastUpdate.Equals(other.LastUpdate) && DrawingSessionId.Equals(other.DrawingSessionId)
+                                                   && Strokes.Values.SequenceEqual(other.Strokes.Values) &&
+                                                   ConnectedUsers.SetEquals(other.ConnectedUsers);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Strokes, ConnectedUsers, LastUpdate, DrawingSessionId);
+    }
+
+    private bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append(nameof(DrawingSessionId)).Append(" = ").Append(DrawingSessionId)
+            .Append(", ").Append(nameof(Strokes)).Append(" = ").AppendFormat("Count = {0}", Strokes.Count)
+            .Append(", ").Append(nameof(ConnectedUsers)).Append(" = ").AppendFormat("Count = {0}", ConnectedUsers.Count)
+            .Append(", ").Append(nameof(LastUpdate)).Append(" = ").Append(LastUpdate);
+        return true;
+    }
 }
 
 public static class DrawingSessionStateExtensions
@@ -96,13 +120,17 @@ public static class DrawingSessionStateExtensions
             }
         }
     }
-    
+
     public static DrawingSessionState Apply(this DrawingSessionState currentState, IDrawingSessionEvent @event)
     {
         var e = @event switch
         {
             DrawingSessionEvents.StrokeAdded strokeAdded =>
-                currentState with { Strokes = currentState.Strokes.SetItem(strokeAdded.Stroke.Id, strokeAdded.Stroke), LastUpdate = DateTime.UtcNow},
+                currentState with
+                {
+                    Strokes = currentState.Strokes.SetItem(strokeAdded.Stroke.Id, strokeAdded.Stroke),
+                    LastUpdate = DateTime.UtcNow
+                },
             DrawingSessionEvents.StrokeRemoved strokeRemoved =>
                 currentState with { Strokes = currentState.Strokes.Remove(strokeRemoved.StrokeId) },
             DrawingSessionEvents.StrokesCleared =>
@@ -113,7 +141,7 @@ public static class DrawingSessionStateExtensions
                 currentState with { ConnectedUsers = currentState.ConnectedUsers.Remove(userRemoved.UserId) },
             _ => currentState
         };
-        
+
         e = e with { LastUpdate = DateTime.UtcNow };
         return e;
     }

@@ -9,10 +9,18 @@
     <ItemGroup>
       <PackageReference Include="Akka.Cluster.Hosting" />
       <PackageReference Include="Akka.Streams" />
+      <PackageReference Include="Grpc.Tools">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\DrawTogether.Entities\DrawTogether.Entities.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Protobuf Include="Serialization\Proto\DrawingProtocol.proto" GrpcServices="None" />
     </ItemGroup>
 
 </Project>

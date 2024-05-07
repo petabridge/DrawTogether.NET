@@ -6,8 +6,6 @@ public static class DrawingSessionQueries
 {
     public sealed record GetDrawingSessionState(DrawingSessionId DrawingSessionId) : IDrawingSessionQuery;
     
-    public sealed record GetDrawingSessionUsers(DrawingSessionId DrawingSessionId) : IDrawingSessionQuery;
-    
     public sealed record SubscribeToDrawingSession(DrawingSessionId DrawingSessionId) : IDrawingSessionQuery;
     
     public sealed record SubscribeAcknowledged(DrawingSessionId DrawingSessionId) : IDrawingSessionQuery;
