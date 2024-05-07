@@ -1,4 +1,5 @@
-﻿using DrawTogether.Entities.Drawings;
+﻿using DrawTogether.Entities;
+using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
 
@@ -28,25 +29,17 @@ public static class LocalPaintProtocol
 
     public sealed class AddPointToConnectedStroke(
         Point point,
-        StrokeId strokeId,
         DrawingSessionId drawingSessionId,
-        UserId userId)
+        UserId userId, GreaterThanZeroInteger strokeWidth, Color strokeColor)
         : IPaintSessionMessage
     {
         public Point Point { get; } = point;
-
-        public StrokeId StrokeId { get; } = strokeId;
-        public DrawingSessionId DrawingSessionId { get; } = drawingSessionId;
-        public UserId UserId { get; } = userId;
-    }
-
-    public sealed class CreateConnectedStroke(DrawingSessionId drawingSessionId, UserId userId, ConnectedStroke connectedStroke)
-        : IPaintSessionMessage
-    {
-        public StrokeId StrokeId { get; } = connectedStroke.Id;
         
-        public ConnectedStroke ConnectedStroke { get; } = connectedStroke;
         public DrawingSessionId DrawingSessionId { get; } = drawingSessionId;
         public UserId UserId { get; } = userId;
+        
+        public GreaterThanZeroInteger StrokeWidth { get; } = strokeWidth;
+    
+        public Color StrokeColor { get; } = strokeColor;
     }
 }

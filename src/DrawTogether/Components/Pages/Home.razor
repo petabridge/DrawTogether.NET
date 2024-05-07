@@ -78,21 +78,24 @@ else
     // create subscription
     async Task RunSubscription()
     {
-        var source = Source.ActorRef<DrawingActivityUpdate>(100, OverflowStrategy.DropHead);
+        var source = Source.ActorRef<List<DrawingActivityUpdate>>(100, OverflowStrategy.DropHead);
         var (srcActor, src) = source.PreMaterialize(ActorSystem);
 
         // starts the pump
         allDrawingsActor.Tell(new DrawingIndexQueries.SubscribeToDrawingSessionUpdates(srcActor));
 
-        await foreach (var item in src.RunAsAsyncEnumerable(ActorSystem).WithCancellation(_shutdownCts.Token))
+        await foreach (var items in src.RunAsAsyncEnumerable(ActorSystem).WithCancellation(_shutdownCts.Token))
         {
-            if (item.IsRemoved)
+            foreach (var item in items)
             {
-                _drawingActivities.Remove(item.DrawingSessionId);
-            }
-            else
-            {
-                _drawingActivities[item.DrawingSessionId] = item;
+                if (item.IsRemoved)
+                {
+                    _drawingActivities.Remove(item.DrawingSessionId);
+                }
+                else
+                {
+                    _drawingActivities[item.DrawingSessionId] = item;
+                }
             }
 
             StateHasChanged();

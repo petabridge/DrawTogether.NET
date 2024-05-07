@@ -48,7 +48,7 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
 
     public DrawingSessionActor(string sessionId, IRequiredActor<AllDrawingsPublisherActor> drawingActivityPublisher)
     {
-        PersistenceId = sessionId;
+        PersistenceId = $"drawsession-{sessionId}";
         _drawingActivityPublisher = drawingActivityPublisher.ActorRef;
         State = new DrawingSessionState(new DrawingSessionId(sessionId));
     }
