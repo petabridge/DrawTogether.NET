@@ -33,6 +33,16 @@ public class DrawingProtocolSerializerSpecs : TestKit
         VerifySerialization(drawingSessionState);
     }
 
+    [Fact]
+    public void ShouldSerializeDrawingActivityUpdate()
+    {
+        var drawingActivityUpdate1 = new DrawingActivityUpdate(new DrawingSessionId("foo"), 4, DateTime.UtcNow, true);
+        var drawingActivityUpdate2 = new DrawingActivityUpdate(new DrawingSessionId("foo"), 0, DateTime.UtcNow, false);
+        
+        VerifySerialization(drawingActivityUpdate1);
+        VerifySerialization(drawingActivityUpdate2);
+    }
+
     private void VerifySerialization<TMessage>(TMessage message)
     {
         var serializerFor = (SerializerWithStringManifest)Sys.Serialization.FindSerializerFor(message);

@@ -396,6 +396,7 @@ public sealed class DrawingProtocolSerializer : SerializerWithStringManifest
             IDrawingSessionEvent => GetManifestForEvent(o),
             IDrawingSessionCommand => GetManifestForCommand(o),
             IDrawingSessionQuery => GetManifestForQuery(o),
+            DrawingActivityUpdate => DrawingActivityUpdateManifest,
             DrawingSessionState => DrawingSessionStateManifest,
             _ => throw new ArgumentException($"Can't serialize object of type {o.GetType()}")
         };
