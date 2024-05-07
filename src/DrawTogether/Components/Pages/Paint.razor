@@ -19,21 +19,36 @@
 @inject IRequiredActor<LocalDrawingSessionActor> LocalDrawingSessionActor;
 @attribute [Authorize]
 
+
 <h3>Paint!</h3>
+<MudGrid>
+    <MudItem xs="2">
+        <MudStack>
+            <MudPaper>
+                <MudColorPicker Label="Color" @bind-Text="_colorString" Style="@($"color: {_colorString};")" Placeholder="Select Color" PickerVariant="PickerVariant.Static"/>
+            </MudPaper>
+            <MudPaper>
+                <MudSlider Value="@_cursorSize.Value" ValueLabel="true" Min="1" Max="50" ValueChanged="@((int value) => UpdateCursorSize(value))">Cursor Size</MudSlider>
+            </MudPaper>
+        </MudStack>
+    </MudItem> 
+    <MudItem xs="10">
+        <section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
+                 @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
+            <svg width="900" height="500">
+                <Circle radius="@_cursorSize.Value" cursorId="@_currentUserId!.IdentityName" cX="@cX" cY="@cY" fillColor="@_color.HexCodeOrColorName" borderColor="@_color.HexCodeOrColorName"/>
+                @foreach (var connectedStroke in Strokes.Values)
+                {
+                    <Curve Points="@connectedStroke.Points" Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
+                }
+            </svg>
+        </section>
+    </MudItem>
+</MudGrid>
 
-<ColorPicker ColorValueChanged="UpdateColor"></ColorPicker>
-<CursorPicker CursorSizeChanged="UpdateCursorSize"></CursorPicker>
 
-<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
-         @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
-    <svg width="900" height="500">
-        <Circle radius="@_cursorSize.Value" cursorId="@_currentUserId!.IdentityName" cX="@cX" cY="@cY" fillColor="@_color.HexCodeOrColorName" borderColor="@_color.HexCodeOrColorName"/>
-        @foreach (var connectedStroke in Strokes.Values)
-        {
-            <Curve Points="@connectedStroke.Points" Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
-        }
-    </svg>
-</section>
+
+
 
 <div id="active-users">
     <ol>
@@ -143,7 +158,7 @@
                 break;
             case DrawingSessionEvents.StrokesCleared:
                 Strokes.Clear();
-                break;    
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(item));
         }
@@ -155,7 +170,8 @@
 
     double cX = 110.0d;
     double cY = 110.0d;
-    private Color _color = new("black");
+    private string _colorString = "black";
+    private Color _color => new(_colorString);
     private GreaterThanZeroInteger _cursorSize = new(8);
 
     private string mousePointerMessage = "foo";
@@ -193,12 +209,7 @@
             OnNext(new Point(e.OffsetX, e.OffsetY));
         }
     }
-
-    private void UpdateColor(string color)
-    {
-        _color = new Color(color);
-    }
-
+    
     private void UpdateCursorSize(int cursorSize)
     {
         _cursorSize = new GreaterThanZeroInteger(cursorSize);

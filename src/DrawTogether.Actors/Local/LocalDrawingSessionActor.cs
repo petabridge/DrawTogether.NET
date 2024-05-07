@@ -189,7 +189,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     {
         AttemptToSubscribe();
 
-        Context.SetReceiveTimeout(TimeSpan.FromMinutes(2));
+        Context.SetReceiveTimeout(TimeSpan.FromMinutes(15));
         var (sourceRef, source) = Source.ActorRef<AddPointToConnectedStroke>(1000, OverflowStrategy.DropHead)
             .PreMaterialize(_materializer);
 
