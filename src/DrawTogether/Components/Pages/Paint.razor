@@ -20,15 +20,27 @@
 @attribute [Authorize]
 
 
-<h3>Paint!</h3>
+<h3>Paint with [@ConnectedUsers.Count] People</h3>
+<MudPaper Class="align-content-center d-flex" Elevation="0">
+    <MudText Typo="Typo.h6">Connected Users:</MudText>
+    <ul class="list-inline">
+    @foreach (var user in ConnectedUsers)
+    {
+        <li class="list-inline-item">@user.IdentityName</li>
+    }
+    </ul>
+</MudPaper>
 <MudGrid>
     <MudItem xs="2">
         <MudStack>
-            <MudPaper>
+            <MudPaper Elevation="0">
                 <MudColorPicker Label="Color" @bind-Text="_colorString" Style="@($"color: {_colorString};")" Placeholder="Select Color" PickerVariant="PickerVariant.Static"/>
             </MudPaper>
-            <MudPaper>
+            <MudPaper Elevation="0">
                 <MudSlider Value="@_cursorSize.Value" ValueLabel="true" Min="1" Max="50" ValueChanged="@((int value) => UpdateCursorSize(value))">Cursor Size</MudSlider>
+            </MudPaper>
+            <MudPaper Elevation="0" Class="align-content-center">
+                <button class="btn btn-primary" id="reset" @onclick="ResetScreen">Clear Screen</button>
             </MudPaper>
         </MudStack>
     </MudItem>
@@ -45,22 +57,6 @@
         </section>
     </MudItem>
 </MudGrid>
-
-
-<div id="active-users">
-    <ol>
-        @foreach (var u in ConnectedUsers)
-        {
-            <li>@u.IdentityName</li>
-        }
-    </ol>
-</div>
-
-<p>@mousePointerMessage</p>
-
-<p>@blazorHubDebugMessage</p>
-
-<button id="reset" @onclick="ResetScreen">Clear Screen</button>
 
 @code {
 
@@ -134,7 +130,11 @@
         Debug.Assert(_eventStream != null, nameof(_eventStream) + " != null");
         while (!_shutdownCts.IsCancellationRequested && await _eventStream.WaitToReadAsync(_shutdownCts.Token))
         while (_eventStream.TryRead(out var evt))
+        {
             HandleEvent(evt);
+            await InvokeAsync(StateHasChanged);
+        }
+           
 
         // navigate us to home if the stream dies out 
         NavigationManager.NavigateTo("/");
@@ -164,7 +164,6 @@
         }
 
         LastUpdate = DateTime.UtcNow;
-        StateHasChanged();
     }
 
 
