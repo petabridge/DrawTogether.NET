@@ -40,4 +40,16 @@ public sealed record ConnectedStroke(StrokeId Id)
     public GreaterThanZeroInteger StrokeWidth { get; init; } = GreaterThanZeroInteger.Default;
     
     public Color StrokeColor { get; init; } = Color.Black;
+
+    public bool Equals(ConnectedStroke? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return StrokeWidth.Equals(other.StrokeWidth) && StrokeColor.Equals(other.StrokeColor) && Id.Equals(other.Id) && Points.SequenceEqual(other.Points);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Points, StrokeWidth, StrokeColor, Id);
+    }
 }

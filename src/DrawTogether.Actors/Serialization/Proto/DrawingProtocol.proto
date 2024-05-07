@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package DrawTogether.Actors.Serialization.Proto;
+
+import "google/protobuf/timestamp.proto";
+
+/* Primitives */
+message Point {
+    double x = 1;
+    double y = 2;
+}
+
+message ConnectedStroke {
+    int32 id = 1;
+    repeated Point points = 2;
+    int32 strokeWidth = 3;
+    string strokeColor = 4;
+}
+
+/* Commands and events */
+message AddUser {
+    string drawingSessionId = 1;
+    string userId = 2;
+}
+
+message RemoveUser {
+    string drawingSessionId = 1;
+    string userId = 2;
+    
+}
+
+message AddStroke {
+    string drawingSessionId = 2;
+    ConnectedStroke connectedStroke = 3;
+}
+
+message RemoveStroke {
+    string drawingSessionId = 1;
+    int32 strokeId = 2;
+}
+
+message ClearStrokes {
+    string drawingSessionId = 1;
+}
+
+message SessionClosed {
+    string drawingSessionId = 1;
+}
+
+/* State */
+
+message DrawingSessionState{
+    string drawingSessionId = 1;
+    repeated ConnectedStroke connectedStrokes = 2;
+    repeated string connectedUsers = 3;
+    google.protobuf.Timestamp lastUpdated = 4;
+}
+
+/* Queries */
+
+message GetDrawingSessionState {
+    string drawingSessionId = 1;
+}
+
+message SubscribeToDrawingSessionState {
+    string drawingSessionId = 1;
+}
+
+message SubscribeAcknowledged {
+    string drawingSessionId = 1;
+}
+
+message UnsubscribeFromDrawingSessionState {
+    string drawingSessionId = 1;
+}
+
+message UnsubscribeAcknowledged {
+    string drawingSessionId = 1;
+}
+
+message  DrawingActivityUpdated {
+    string drawingSessionId = 1;
+    google.protobuf.Timestamp lastUpdated = 2;
+    int32 activeUsers = 3;
+    bool isRemoved = 4;
+}

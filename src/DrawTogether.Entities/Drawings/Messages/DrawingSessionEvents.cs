@@ -6,8 +6,6 @@ public interface IDrawingSessionEvent : IWithDrawingSessionId { }
 
 public static class DrawingSessionEvents
 {
-    public sealed record DrawingSessionCreated(DrawingSessionId DrawingSessionId) : IDrawingSessionEvent;
-    
     public sealed record StrokeAdded(DrawingSessionId DrawingSessionId, ConnectedStroke Stroke) : IDrawingSessionEvent;
     
     public sealed record StrokeRemoved(DrawingSessionId DrawingSessionId, StrokeId StrokeId) : IDrawingSessionEvent;
