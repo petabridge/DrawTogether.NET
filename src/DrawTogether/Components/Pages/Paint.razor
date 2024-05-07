@@ -27,7 +27,7 @@
 <section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
          @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
     <svg width="900" height="500">
-        <Circle radius="@_cursorSize.Value" cursorId="user" cX="@cX" cY="@cY" fillColor="@_color.HexCodeOrColorName" borderColor="@_color.HexCodeOrColorName"/>
+        <Circle radius="@_cursorSize.Value" cursorId="@_currentUserId!.IdentityName" cX="@cX" cY="@cY" fillColor="@_color.HexCodeOrColorName" borderColor="@_color.HexCodeOrColorName"/>
         @foreach (var connectedStroke in Strokes.Values)
         {
             <Curve Points="@connectedStroke.Points" Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
@@ -39,7 +39,7 @@
     <ol>
         @foreach (var u in ConnectedUsers)
         {
-            <li>@u</li>
+            <li>@u.IdentityName</li>
         }
     </ol>
 </div>
@@ -141,6 +141,9 @@
             case DrawingSessionEvents.StrokeRemoved strokeRemoved:
                 Strokes.Remove(strokeRemoved.StrokeId);
                 break;
+            case DrawingSessionEvents.StrokesCleared:
+                Strokes.Clear();
+                break;    
             default:
                 throw new ArgumentOutOfRangeException(nameof(item));
         }
@@ -203,7 +206,9 @@
 
     private void ResetScreen()
     {
-        //strokes.Clear();
+        Debug.Assert(DrawingSessionId != null, nameof(DrawingSessionId) + " != null");
+        Debug.Assert(_currentUserId != null, nameof(_currentUserId) + " != null");
+        _localActorHandle.Tell(new LocalPaintProtocol.ClearDrawingSession(DrawingSessionId, _currentUserId));
     }
 
 
