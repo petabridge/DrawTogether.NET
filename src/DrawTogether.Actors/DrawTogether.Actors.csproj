@@ -9,6 +9,10 @@
     <ItemGroup>
       <PackageReference Include="Akka.Cluster.Hosting" />
       <PackageReference Include="Akka.Streams" />
+      <PackageReference Include="Grpc.Tools">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
