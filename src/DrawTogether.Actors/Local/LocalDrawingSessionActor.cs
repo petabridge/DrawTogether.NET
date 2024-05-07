@@ -189,12 +189,12 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     {
         AttemptToSubscribe();
 
-        Context.SetReceiveTimeout(TimeSpan.FromMinutes(2));
+        Context.SetReceiveTimeout(TimeSpan.FromMinutes(20));
         var (sourceRef, source) = Source.ActorRef<AddPointToConnectedStroke>(1000, OverflowStrategy.DropHead)
             .PreMaterialize(_materializer);
 
         _debouncer = sourceRef;
-        source.GroupedWithin(25, TimeSpan.FromMilliseconds(75))
+        source.GroupedWithin(10, TimeSpan.FromMilliseconds(75))
             .Select(c => TransmitActions(c.ToList()))
             .SelectMany(c => c)
             .SelectAsync(1, async c =>

@@ -19,36 +19,44 @@
 @inject IRequiredActor<LocalDrawingSessionActor> LocalDrawingSessionActor;
 @attribute [Authorize]
 
-<h3>Paint!</h3>
 
-<ColorPicker ColorValueChanged="UpdateColor"></ColorPicker>
-<CursorPicker CursorSizeChanged="UpdateCursorSize"></CursorPicker>
-
-<section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
-         @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
-    <svg width="900" height="500">
-        <Circle radius="@_cursorSize.Value" cursorId="@_currentUserId!.IdentityName" cX="@cX" cY="@cY" fillColor="@_color.HexCodeOrColorName" borderColor="@_color.HexCodeOrColorName"/>
-        @foreach (var connectedStroke in Strokes.Values)
-        {
-            <Curve Points="@connectedStroke.Points" Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
-        }
-    </svg>
-</section>
-
-<div id="active-users">
-    <ol>
-        @foreach (var u in ConnectedUsers)
-        {
-            <li>@u.IdentityName</li>
-        }
-    </ol>
-</div>
-
-<p>@mousePointerMessage</p>
-
-<p>@blazorHubDebugMessage</p>
-
-<button id="reset" @onclick="ResetScreen">Clear Screen</button>
+<h3>Paint with [@ConnectedUsers.Count] People</h3>
+<MudPaper Class="align-content-center d-flex" Elevation="0">
+    <MudText Typo="Typo.h6">Connected Users:</MudText>
+    <ul class="list-inline">
+    @foreach (var user in ConnectedUsers)
+    {
+        <li class="list-inline-item">@user.IdentityName</li>
+    }
+    </ul>
+</MudPaper>
+<MudGrid>
+    <MudItem xs="2">
+        <MudStack>
+            <MudPaper Elevation="0">
+                <MudColorPicker Label="Color" @bind-Text="_colorString" Style="@($"color: {_colorString};")" Placeholder="Select Color" PickerVariant="PickerVariant.Static"/>
+            </MudPaper>
+            <MudPaper Elevation="0">
+                <MudSlider Value="@_cursorSize.Value" ValueLabel="true" Min="1" Max="50" ValueChanged="@((int value) => UpdateCursorSize(value))">Cursor Size</MudSlider>
+            </MudPaper>
+            <MudPaper Elevation="0" Class="align-content-center">
+                <button class="btn btn-primary" id="reset" @onclick="ResetScreen">Clear Screen</button>
+            </MudPaper>
+        </MudStack>
+    </MudItem>
+    <MudItem xs="10">
+        <section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
+                 @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
+            <svg width="900" height="500">
+                <Circle radius="@_cursorSize.Value" cursorId="@_currentUserId!.IdentityName" cX="@cX" cY="@cY" fillColor="@_color.HexCodeOrColorName" borderColor="@_color.HexCodeOrColorName"/>
+                @foreach (var connectedStroke in Strokes.Values)
+                {
+                    <Curve Points="@connectedStroke.Points" Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
+                }
+            </svg>
+        </section>
+    </MudItem>
+</MudGrid>
 
 @code {
 
@@ -122,7 +130,14 @@
         Debug.Assert(_eventStream != null, nameof(_eventStream) + " != null");
         while (!_shutdownCts.IsCancellationRequested && await _eventStream.WaitToReadAsync(_shutdownCts.Token))
         while (_eventStream.TryRead(out var evt))
+        {
             HandleEvent(evt);
+            await InvokeAsync(StateHasChanged);
+        }
+           
+
+        // navigate us to home if the stream dies out 
+        NavigationManager.NavigateTo("/");
     }
 
     private void HandleEvent(IDrawingSessionEvent item)
@@ -143,19 +158,19 @@
                 break;
             case DrawingSessionEvents.StrokesCleared:
                 Strokes.Clear();
-                break;    
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(item));
         }
 
         LastUpdate = DateTime.UtcNow;
-        StateHasChanged();
     }
 
 
     double cX = 110.0d;
     double cY = 110.0d;
-    private Color _color = new("black");
+    private string _colorString = "black";
+    private Color _color => new(_colorString);
     private GreaterThanZeroInteger _cursorSize = new(8);
 
     private string mousePointerMessage = "foo";
@@ -192,11 +207,6 @@
         {
             OnNext(new Point(e.OffsetX, e.OffsetY));
         }
-    }
-
-    private void UpdateColor(string color)
-    {
-        _color = new Color(color);
     }
 
     private void UpdateCursorSize(int cursorSize)

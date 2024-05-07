@@ -7,6 +7,7 @@ using DrawTogether.Config;
 using DrawTogether.Data;
 using DrawTogether.Email;
 using Microsoft.AspNetCore.ResponseCompression;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddRazorComponents()
 
 // If you also want WebAssembly SSR, include this line:
 builder.Services.AddServerSideBlazor();
+builder.Services.AddMudServices();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
