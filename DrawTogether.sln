@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DrawTogether.Entities", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DrawTogether.Actors", "src\DrawTogether.Actors\DrawTogether.Actors.csproj", "{5863DD74-00DE-4DE9-9F0A-FCBC32195E78}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DrawTogether.Tests", "src\DrawTogether.Tests\DrawTogether.Tests.csproj", "{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -109,6 +111,18 @@ Global
 		{5863DD74-00DE-4DE9-9F0A-FCBC32195E78}.Release|x64.Build.0 = Release|Any CPU
 		{5863DD74-00DE-4DE9-9F0A-FCBC32195E78}.Release|x86.ActiveCfg = Release|Any CPU
 		{5863DD74-00DE-4DE9-9F0A-FCBC32195E78}.Release|x86.Build.0 = Release|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Debug|x64.Build.0 = Debug|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Debug|x86.Build.0 = Debug|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Release|x64.ActiveCfg = Release|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Release|x64.Build.0 = Release|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Release|x86.ActiveCfg = Release|Any CPU
+		{78CAFA4F-0DBC-45F7-8794-48785FDFDD47}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
