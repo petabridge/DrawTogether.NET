@@ -70,7 +70,9 @@ else
         // starts the pump
         allDrawingsActor.Tell(new DrawingIndexQueries.SubscribeToDrawingSessionUpdates(srcActor));
 
-        await foreach (var items in src.RunAsAsyncEnumerable(ActorSystem).WithCancellation(_shutdownCts.Token))
+        await foreach (var items in src
+                           .RunAsAsyncEnumerable(ActorSystem)
+                           .WithCancellation(_shutdownCts.Token))
         {
             foreach (var item in items)
             {
@@ -86,6 +88,9 @@ else
 
             StateHasChanged();
         }
+        
+        // shut the actor down to prevent resource leaks
+        srcActor.Tell(PoisonPill.Instance);
     }
 
     public async ValueTask DisposeAsync()
