@@ -1,4 +1,5 @@
 ﻿using System.Threading.Channels;
+using Akka;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Hosting;
@@ -37,6 +38,12 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         }
 
         public DrawingSessionId DrawingSessionId { get; }
+    }
+    
+    public sealed class LocalDrawingSessionSubscriberDied(IActorRef localDrawingSessionActor)
+        : IDeadLetterSuppression, INoSerializationVerificationNeeded
+    {
+        public IActorRef LocalDrawingSessionActor { get; } = localDrawingSessionActor;
     }
 
     /// <summary>
@@ -93,8 +100,8 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _drawingSessionActor;
     private readonly DrawingSessionId _drawingSessionId;
-    private readonly HashSet<IActorRef> _clientSessions = new();
-    private readonly IMaterializer _materializer = Context.System.Materializer();
+    private readonly Dictionary<IActorRef, CancellationTokenSource> _clientSessions = new();
+    private readonly IMaterializer _materializer = Context.Materializer();
     private IActorRef _debouncer = ActorRefs.Nobody;
 
     public LocalDrawingSessionActor(string drawingSessionId,
@@ -117,7 +124,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
             case LeavePaintSession paintMessage:
                 _drawingSessionActor.Tell(new DrawingSessionCommands.RemoveUser(_drawingSessionId, paintMessage.UserId));
                 break;
-            case ClearDrawingSession clearMessage:
+            case ClearDrawingSession:
                 _drawingSessionActor.Tell(new DrawingSessionCommands.ClearStrokes(_drawingSessionId));
                 break;
             case CommandResult cmdResult:
@@ -137,14 +144,25 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                 break;
             case GetDrawingChannel:
                 var cts = new CancellationTokenSource();
+                var self = Self; // closure
                 var (sourceRef, src) = Source.ActorRef<IDrawingSessionEvent>(1000, OverflowStrategy.DropHead)
                     .PreMaterialize(_materializer);
                 var (channel, channelSink) = ChannelSink.AsReader<IDrawingSessionEvent>(100, true, BoundedChannelFullMode.Wait)
                     .PreMaterialize(_materializer);
                 src.Via(cts.Token.AsFlow<IDrawingSessionEvent>()) // lets the client kill the channel
+                    .WatchTermination((mat, task) =>
+                    {
+                        // ReSharper disable once MethodSupportsCancellation
+                        task.ContinueWith(_ =>
+                        {
+                            self.Tell(new LocalDrawingSessionSubscriberDied(sourceRef));
+                            return NotUsed.Instance;
+                        });
+                        return mat;
+                    })
                     .To(channelSink).Run(_materializer);
                 Context.WatchWith(sourceRef, new LocalSubscriberDied(sourceRef));
-                _clientSessions.Add(sourceRef);
+                _clientSessions[sourceRef] = cts;
                 Sender.Tell(new DrawingChannelResponse(channel, cts));
                 break;
             case DrawingSessionQueries.SubscribeAcknowledged subscribed:
@@ -158,6 +176,14 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                 break;
             case RetryConnectionToDrawingSession _:
                 AttemptToSubscribe();
+                break;
+            case LocalSubscriberDied died:
+                _log.Debug("Local subscriber [{0}] died, removing from list", died.Subscriber);
+                if (_clientSessions.TryGetValue(died.Subscriber, out var cancelSub))
+                {
+                    cancelSub.Cancel(); // ensure that the stream stops
+                    _clientSessions.Remove(died.Subscriber);
+                }
                 break;
             case ReceiveTimeout _:
                 _log.Warning("Shutting down local handle to [{0}]", _drawingSessionId);
@@ -206,7 +232,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     private void PublishEvent(IDrawingSessionEvent drawingEvent)
     {
         foreach(var client in _clientSessions)
-            client.Tell(drawingEvent);
+            client.Key.Tell(drawingEvent);
     }
 
     public ITimerScheduler Timers { get; set; } = null!;
@@ -215,7 +241,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     {
         AttemptToSubscribe();
 
-        Context.SetReceiveTimeout(TimeSpan.FromMinutes(20));
+        Context.SetReceiveTimeout(TimeSpan.FromSeconds(15));
         var (sourceRef, source) = Source.ActorRef<AddPointToConnectedStroke>(1000, OverflowStrategy.DropHead)
             .PreMaterialize(_materializer);
 
@@ -253,6 +279,13 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         _drawingSessionActor.Tell(new DrawingSessionQueries.SubscribeToDrawingSession(_drawingSessionId));
         Timers.StartPeriodicTimer("ConnectToChannel", RetryConnectionToDrawingSession.Instance,
             TimeSpan.FromMilliseconds(500));
+    }
+    
+    protected override void PostStop()
+    {
+        foreach(var client in _clientSessions)
+            client.Value.Cancel();
+        _clientSessions.Clear();
     }
 }
 
