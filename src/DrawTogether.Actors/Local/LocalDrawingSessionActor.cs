@@ -186,8 +186,12 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
                 }
                 break;
             case ReceiveTimeout _:
-                _log.Warning("Shutting down local handle to [{0}]", _drawingSessionId);
-                Context.Stop(Self);
+                // if we have any connected clients, keep the session open
+                if (_clientSessions.Count == 0)
+                {
+                    _log.Warning("Shutting down local handle to [{0}]", _drawingSessionId);
+                    Context.Stop(Self);
+                }
                 break;
             case RemoteDrawingSessionActorDied died:
                 _log.Warning("Remote DrawingSession [{0}] died", died.DrawingSessionId);
@@ -241,7 +245,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     {
         AttemptToSubscribe();
 
-        Context.SetReceiveTimeout(TimeSpan.FromSeconds(15));
+        Context.SetReceiveTimeout(TimeSpan.FromMinutes(20));
         var (sourceRef, source) = Source.ActorRef<AddPointToConnectedStroke>(1000, OverflowStrategy.DropHead)
             .PreMaterialize(_materializer);
 
