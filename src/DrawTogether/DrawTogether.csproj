@@ -6,7 +6,22 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>aspnet-DrawTogether-519D8737-B9C5-4479-BE39-7C98C7D228C7</UserSecretsId>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <ContainerRepository>drawtogether-app</ContainerRepository>
+        <ContainerImageTags>$(VersionPrefix);latest</ContainerImageTags>
     </PropertyGroup>
+
+    <ItemGroup>
+        <!-- HTTP/HTTPS -->
+        <ContainerPort Include="80" Type="tcp" />
+        <ContainerPort Include="443" Type="tcp" />
+        <!-- Akka.Management -->
+        <ContainerPort Include="8558" Type="tcp" />
+        <!-- Akka.Remote -->
+        <ContainerPort Include="8081" Type="tcp" />
+        <!-- Petabridge.Cmd -->
+        <ContainerPort Include="9110" Type="tcp" />
+    </ItemGroup>
+
 
     <ItemGroup>
         <PackageReference Include="Akka.Persistence.Sql.Hosting" />
@@ -14,13 +29,8 @@
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools"/>
+        <PackageReference Include="Microsoft.NET.Build.Containers" />
         <PackageReference Include="MudBlazor" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Content Include="..\.dockerignore">
-        <Link>.dockerignore</Link>
-      </Content>
     </ItemGroup>
 
     <ItemGroup>
