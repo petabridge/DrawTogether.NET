@@ -1,11 +1,9 @@
 @page "/paint/{sessionId}"
-@inject NavigationManager NavigationManager;
 @using System.Diagnostics
 @using System.Security.Claims
 @using System.Threading.Channels
 @using Akka.Actor
 @using Akka.Hosting
-@using Akka.Util
 @using DrawTogether.Actors.Local
 @using DrawTogether.Components.Draw
 @using DrawTogether.Entities
@@ -14,6 +12,7 @@
 @using DrawTogether.Entities.Users
 @using Microsoft.AspNetCore.Authorization
 @using Color = DrawTogether.Entities.Drawings.Color
+@inject NavigationManager NavigationManager;
 @implements IAsyncDisposable;
 @inject AuthenticationStateProvider GetAuthenticationStateAsync
 @inject IRequiredActor<LocalDrawingSessionActor> LocalDrawingSessionActor;
@@ -131,7 +130,8 @@
     async Task RunDataPump()
     {
         Debug.Assert(_eventStream != null, nameof(_eventStream) + " != null");
-        while (!_shutdownCts.IsCancellationRequested && await _eventStream.WaitToReadAsync(_shutdownCts.Token))
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, _readDoneCts!.Token);
+        while (!linkedCts.IsCancellationRequested && await _eventStream.WaitToReadAsync(linkedCts.Token))
         while (_eventStream.TryRead(out var evt))
         {
             HandleEvent(evt);
@@ -140,7 +140,6 @@
 
         // signal to local actor that we are done reading
         _readDoneCts?.CancelAsync();
-           
 
         // navigate us to home if the stream dies out 
         NavigationManager.NavigateTo("/");
@@ -192,15 +191,14 @@
 
     private void OnNext(Point point)
     {
-        _localActorHandle?.Tell(new LocalPaintProtocol.AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
+        _localActorHandle?.Tell(new LocalPaintProtocol
+            .AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
     }
 
     private void CursorMove(MouseEventArgs e)
     {
-        mousePointerMessage = $"Mouse coordinates: {e.ScreenX}:{e.ScreenY}";
         cX = e.OffsetX;
         cY = e.OffsetY;
-        mousePointerMessage = $"Moving circle to {e.OffsetX},{e.OffsetY} [button pressed? {e.Buttons}]";
         if (e.Buttons == 1)
         {
             OnNext(new Point(e.OffsetX, e.OffsetY));
@@ -233,7 +231,9 @@
         _readDoneCts?.CancelAsync();
         _readDoneCts?.Dispose();
         await _shutdownCts.CancelAsync();
-        if (DrawingSessionId != null && _currentUserId is not null) _localActorHandle.Tell(new LocalPaintProtocol.LeavePaintSession(DrawingSessionId, _currentUserId));
+        if (DrawingSessionId != null && _currentUserId is not null) 
+            _localActorHandle.Tell(
+                new LocalPaintProtocol.LeavePaintSession(DrawingSessionId, _currentUserId));
         _shutdownCts.Dispose();
     }
 
