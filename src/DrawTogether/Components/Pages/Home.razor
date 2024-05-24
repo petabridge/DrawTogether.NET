@@ -97,7 +97,6 @@ else
     {
         await _shutdownCts.CancelAsync();
         _shutdownCts.Dispose();
-        await ValueTask.CompletedTask;
     }
 
 }
