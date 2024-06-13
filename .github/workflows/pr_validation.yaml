@@ -21,7 +21,7 @@ permissions:
 jobs:
   build-docker:
     # Permissions this GitHub Action needs for other things in GitHub
-    name: Test-${{matrix.os}}
+    name: Docker-${{matrix.os}}
     runs-on: ${{matrix.os}}
 
     strategy:
