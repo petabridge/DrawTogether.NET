@@ -20,6 +20,9 @@ public static class ServiceCollectionExtensions
         if (string.IsNullOrWhiteSpace(configuration["EmailSettings:MailgunDomain"]) ||
             string.IsNullOrWhiteSpace(configuration["EmailSettings:MailgunApiKey"]))
         {
+            // need to add some no-op IEmailSender implementations
+            services.AddTransient<IEmailSender, NoOpEmailSender<TUser>>();
+            services.AddTransient<IEmailSender<TUser>, NoOpEmailSender<TUser>>();
             return services;
         }
         
