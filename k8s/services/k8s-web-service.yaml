@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: web-cluster-http
   labels:
-    app: web-cluster
+    app: drawtogether
     tier: frontend
 spec:
   type: LoadBalancer
@@ -12,7 +12,7 @@ spec:
     port: 8080
     targetPort: 8080
   selector:
-    app: web-cluster
+    app: drawtogether
 ---
 apiVersion: v1
 kind: Service
