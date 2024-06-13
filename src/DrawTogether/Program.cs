@@ -9,7 +9,14 @@ using DrawTogether.Email;
 using Microsoft.AspNetCore.ResponseCompression;
 using MudBlazor.Services;
 
+// get ASP.NET Environment
+var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("appsettings.json")
+    .AddJsonFile($"appsettings.{env}.json", optional: true)
+    .AddEnvironmentVariables();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
