@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace DrawTogether.Tests;
+namespace DrawTogether.Tests.Configuration;
 
 /// <summary>
 /// We use some programming defaults, i.e. <see cref="Dns.GetHostName"/>, in some places in config.
