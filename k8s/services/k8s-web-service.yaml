@@ -29,7 +29,7 @@ spec:
       name: management
     - port: 5055
       name: akka-remote
-    - port: 80
+    - port: 8080
       name: http
   selector:
     app: drawtogether
@@ -76,7 +76,7 @@ spec:
           value: "Production"
         readinessProbe:
           tcpSocket: 
-            port: 80  
+            port: 8080  
         ports:
           - containerPort: 8558
             protocol: TCP
@@ -84,6 +84,6 @@ spec:
           - containerPort: 5055
             protocol: TCP
             name: akka-remote
-          - containerPort: 80
+          - containerPort: 8080
             protocol: TCP
             name: http
