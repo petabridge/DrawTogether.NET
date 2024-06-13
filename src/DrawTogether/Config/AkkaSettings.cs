@@ -26,4 +26,6 @@ public class AkkaSettings
     };
 
     public ShardOptions ShardOptions { get; set; } = new ShardOptions();
+    
+    public AkkaManagementOptions? AkkaManagementOptions { get; set; }
 }
