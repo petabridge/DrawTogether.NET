@@ -19,6 +19,35 @@ permissions:
   contents: read
 
 jobs:
+  build-docker:
+    # Permissions this GitHub Action needs for other things in GitHub
+    name: Test-${{matrix.os}}
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4.1.6
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: "Install .NET SDK"
+        uses: actions/setup-dotnet@v4.0.0
+        with:
+          global-json-file: "./global.json"
+
+      - name: "Update release notes"
+        shell: pwsh
+        run: |
+          ./build.ps1
+
+      - name: "build docker images"
+        run: ./build-docker.sh
+
   test:
     # Permissions this GitHub Action needs for other things in GitHub
     name: Test-${{matrix.os}}
