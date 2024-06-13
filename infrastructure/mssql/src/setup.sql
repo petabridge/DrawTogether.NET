@@ -17,6 +17,12 @@ GO
 CREATE DATABASE DrawTogether;
 GO
 
+USE [DrawTogether];
+GO
+
+SET QUOTED_IDENTIFIER ON;
+GO
+
 IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
 BEGIN
     CREATE TABLE [__EFMigrationsHistory] (
@@ -25,9 +31,6 @@ BEGIN
         CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
     );
 END;
-GO
-
-BEGIN TRANSACTION;
 GO
 
 IF OBJECT_ID(N'[AspNetRoles]') IS NULL
@@ -176,7 +179,4 @@ BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES (N'20240506070853_InitialCreate', N'8.0.6');
 END;
-GO
-
-COMMIT;
 GO
