@@ -20,7 +20,7 @@ public static class AkkaConfiguration
     public static IServiceCollection ConfigureAkka(this IServiceCollection services, IConfiguration configuration, Action<AkkaConfigurationBuilder, IServiceProvider> additionalConfig)
     {
         var akkaSettings = new AkkaSettings();
-        configuration.GetSection("Akka").Bind(akkaSettings);
+        configuration.GetSection(nameof(AkkaSettings)).Bind(akkaSettings);
 
         services.AddSingleton(akkaSettings);
         
