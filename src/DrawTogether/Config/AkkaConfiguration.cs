@@ -19,11 +19,8 @@ public static class AkkaConfiguration
 {
     public static IServiceCollection ConfigureAkka(this IServiceCollection services, IConfiguration configuration, Action<AkkaConfigurationBuilder, IServiceProvider> additionalConfig)
     {
-        var akkaSettings = new AkkaSettings();
-        configuration.GetSection(nameof(AkkaSettings)).Bind(akkaSettings);
+        var akkaSettings = BindAkkaSettings(services, configuration);
 
-        services.AddSingleton(akkaSettings);
-        
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (connectionString is null)
             throw new Exception("DefaultConnection setting is missing");
@@ -51,8 +48,17 @@ public static class AkkaConfiguration
         
         return services;
     }
-    
-     public static AkkaConfigurationBuilder ConfigureNetwork(this AkkaConfigurationBuilder builder,
+
+    public static AkkaSettings BindAkkaSettings(IServiceCollection services, IConfiguration configuration)
+    {
+        var akkaSettings = new AkkaSettings();
+        configuration.GetSection(nameof(AkkaSettings)).Bind(akkaSettings);
+
+        services.AddSingleton(akkaSettings);
+        return akkaSettings;
+    }
+
+    public static AkkaConfigurationBuilder ConfigureNetwork(this AkkaConfigurationBuilder builder,
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
