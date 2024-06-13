@@ -75,8 +75,7 @@ public static class AkkaConfiguration
 
             builder
                 .WithClustering(clusterOptions)
-                .WithAkkaManagement(hostName: settings.AkkaManagementOptions.Hostname,
-                    settings.AkkaManagementOptions.Port)
+                .WithAkkaManagement(port: settings.AkkaManagementOptions.Port)
                 .WithClusterBootstrap(serviceName: settings.AkkaManagementOptions.ServiceName,
                     portName: settings.AkkaManagementOptions.PortName,
                     requiredContactPoints: settings.AkkaManagementOptions.RequiredContactPointsNr);
