@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-cluster-http
+  labels:
+    app: drawtogether
+    tier: frontend
+spec:
+  type: LoadBalancer
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: drawtogether
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drawtogether
+  labels:
+    app: drawtogether
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None
+  ports:
+    - port: 8558
+      name: management
+    - port: 5055
+      name: akka-remote
+    - port: 8080
+      name: http
+  selector:
+    app: drawtogether
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web-cluster
+  labels:
+    app: drawtogether
+    cluster: webcrawler
+spec:
+  serviceName: drawtogether
+  replicas: 3
+  selector:
+    matchLabels:
+      app: drawtogether
+  template:
+    metadata:
+      labels:
+        app: drawtogether
+        cluster: drawtogether
+    spec:
+      terminationGracePeriodSeconds: 35
+      containers:
+      - name: drawtogether-app
+        image: drawtogether-app:0.2.2
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ConnectionStrings__DefaultConnection
+          value: "Server=sqlserver,1644; Database=DrawTogether; User Id=sa; Password=yourStrong(!)Password; TrustServerCertificate=true;"
+        - name: AkkaSettings__RemoteOptions__Port
+          value: "5055"
+        - name: AkkaSettings__RemoteOptions__PublicHostname
+          value: "$(POD_NAME).drawtogether"
+        - name: AkkaSettings__AkkaManagementOptions__Enabled
+          value: "true"
+        - name: AkkaSettings__AkkaManagementOptions__DiscoveryMethod
+          value: "Kubernetes"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        readinessProbe:
+          tcpSocket: 
+            port: 8080  
+        ports:
+          - containerPort: 8558
+            protocol: TCP
+            name: management
+          - containerPort: 5055
+            protocol: TCP
+            name: akka-remote
+          - containerPort: 8080
+            protocol: TCP
+            name: http

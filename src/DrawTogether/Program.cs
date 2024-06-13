@@ -9,7 +9,14 @@ using DrawTogether.Email;
 using Microsoft.AspNetCore.ResponseCompression;
 using MudBlazor.Services;
 
+// get ASP.NET Environment
+var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("appsettings.json")
+    .AddJsonFile($"appsettings.{env}.json", optional: true)
+    .AddEnvironmentVariables();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -24,10 +31,6 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 builder.Services.AddEmailServices<ApplicationUser>(builder.Configuration); // add email services
-
-// if an email provider is not registered, add the no op email provider
-// builder.Services.TryAddSingleton<IEmailSender, NoOpEmailSender>();
-// builder.Services.TryAddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 builder.Services.AddAuthentication(options =>
     {
