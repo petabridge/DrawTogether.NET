@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # launches local SQL Server dependency so we can run from Visual Studio
 parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 
