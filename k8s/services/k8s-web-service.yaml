@@ -1,6 +1,23 @@
 apiVersion: v1
 kind: Service
 metadata:
+  name: web-cluster-http
+  labels:
+    app: web-cluster
+    tier: frontend
+spec:
+  type: LoadBalancer
+  ports:
+  - nodePort: 31231
+    protocol: TCP
+    port: 6001
+    targetPort: 6001
+  selector:
+    app: web-cluster
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: drawtogether
   labels:
     app: drawtogether
@@ -12,7 +29,7 @@ spec:
       name: management
     - port: 5055
       name: akka-remote
-    - port: 80
+    - port: 6001
       name: http
   selector:
     app: drawtogether
@@ -55,9 +72,11 @@ spec:
           value: "true"
         - name: AkkaSettings__AkkaManagementOptions__DiscoveryMethod
           value: "Kubernetes"
+        - name: Urls
+          value: "http://*.6001"
         readinessProbe:
           tcpSocket: 
-            port: 80    
+            port: 6001  
         ports:
           - containerPort: 8558
             protocol: TCP
@@ -65,6 +84,6 @@ spec:
           - containerPort: 5055
             protocol: TCP
             name: akka-remote
-          - containerPort: 80
+          - containerPort: 6001
             protocol: TCP
             name: http
