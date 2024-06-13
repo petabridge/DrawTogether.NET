@@ -29,7 +29,7 @@ spec:
       name: management
     - port: 5055
       name: akka-remote
-    - port: 6001
+    - port: 80
       name: http
   selector:
     app: drawtogether
@@ -72,11 +72,11 @@ spec:
           value: "true"
         - name: AkkaSettings__AkkaManagementOptions__DiscoveryMethod
           value: "Kubernetes"
-        - name: Urls
-          value: "http://*.6001"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
         readinessProbe:
           tcpSocket: 
-            port: 6001  
+            port: 80  
         ports:
           - containerPort: 8558
             protocol: TCP
@@ -84,6 +84,6 @@ spec:
           - containerPort: 5055
             protocol: TCP
             name: akka-remote
-          - containerPort: 6001
+          - containerPort: 80
             protocol: TCP
             name: http

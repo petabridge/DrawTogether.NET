@@ -39,8 +39,3 @@ spec:
         ports:
         - containerPort: 1433
           name: sqlserver
-        readinessProbe:
-          exec:
-            command: ["/bin/sh", "-c", "ready-check.sh"]
-          initialDelaySeconds: 5
-          periodSeconds: 5
