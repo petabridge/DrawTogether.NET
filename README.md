@@ -24,7 +24,7 @@ This will launch, among other things, a prebuilt SQL Server 2022 instance that h
 
 ### Entity Framework Core Migrations
 
-If you need to apply a change to the database model, by default this project uses a Sqlite instance locally. To apply migrations, change your directory to the `DrawTogether` project:
+If you need to apply a change to the database model, by default this project uses the SQL Server 2022 launched in the step above. To apply migrations, change your directory to the `DrawTogether` project:
 
 ```shell
 cd ./src/DrawTogether/
