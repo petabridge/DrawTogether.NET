@@ -25,7 +25,11 @@ public static class OpenTelemetryConfig
             {
                 builder
                     .AddEnvironmentVariableDetector()
-                    .AddTelemetrySdk();
+                    .AddTelemetrySdk()
+                    .AddAttributes(new []
+                    {
+                        new KeyValuePair<string, object>("service.version", typeof(OpenTelemetryConfig).Assembly.GetName().Version?.ToString() ?? "unknown")
+                    });
             })
             .UseOtlpExporter(OtlpExportProtocol.Grpc, otelEndpoint)
             .WithMetrics(c =>

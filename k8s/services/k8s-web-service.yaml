@@ -67,6 +67,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: ConnectionStrings__DefaultConnection
           value: "Server=sqlserver,1644; Database=DrawTogether; User Id=sa; Password=yourStrong(!)Password; TrustServerCertificate=true;"
         - name: AkkaSettings__RemoteOptions__Port
@@ -85,6 +89,8 @@ spec:
               fieldPath: metadata.name
         - name: OTEL_COLLECTOR_URI
           value: "http://$(OTEL_COLLECTOR_HOSTNAME).monitoring.pod:4317"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.namespace=$(NAMESPACE),service.instance.id=$(POD_ID)"
         readinessProbe:
           tcpSocket: 
             port: 8080  
