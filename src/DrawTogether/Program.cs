@@ -63,7 +63,7 @@ builder.Services.ConfigureAkka(builder.Configuration,
 });
 
 // attempt to extract the OTEL_COLLECTOR_HOSTNAME value from configuration
-var otelCollectorHostname = builder.Configuration["OTEL_COLLECTOR_HOSTNAME"];
+var otelCollectorHostname = builder.Configuration["OTEL_COLLECTOR_URI"];
 builder.Services.AddDrawTogetherOtel(otelCollectorHostname ?? "localhost");
 
 
