@@ -151,6 +151,17 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
                 });
                 break;
             }
+            case SaveSnapshotSuccess success:
+            {
+                _log.Debug("Saved snapshot for {DrawingSessionId}", State.DrawingSessionId);
+                
+                // delete all older snapshots
+                DeleteSnapshots(new SnapshotSelectionCriteria(success.Metadata.SequenceNr-1));
+                
+                // delete all messages taken up until the snapshot
+                DeleteMessages(success.Metadata.SequenceNr);
+                break;
+            }
         }
     }
 
