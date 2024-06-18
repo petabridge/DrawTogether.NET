@@ -15,9 +15,6 @@
     <PackageVersion Include="Grpc.Tools" Version="2.64.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.6" />
     <PackageVersion Include="MudBlazor" Version="6.20.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.9.0" />
   </ItemGroup>
   <!-- ASP.NET Package Versions -->
   <ItemGroup>
@@ -34,10 +31,11 @@
   </ItemGroup>
   <!-- OTEL Package Versions -->
   <ItemGroup>
-    <PackageVersion Include="OpenTelemetry.Api.ProviderBuilderExtensions" Version="1.8.1" />
-    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.8.1" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.1" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.8.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
   </ItemGroup>
   <!-- Utility Package Versions -->
   <ItemGroup>
