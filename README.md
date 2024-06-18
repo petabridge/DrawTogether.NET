@@ -53,3 +53,28 @@ dotnet user-secrets set "EmailSettings:MailgunApiKey" "<mailgun-api-key>"
 ```
 
 If these settings are not provided, DrawTogether.NET will simply fall back to not having email available to support ASP.NET Core Identity.
+
+## Deployment
+
+Out of the box DrawTogether.NET supports Kubernetes deployments, however, if you want to run it locally you'll need to make sure that you have [Nginx Ingress](https://kubernetes.github.io/ingress-nginx/deploy/#quick-start) enabled.
+
+This is how to deploy the most recent version of Nginx Ingress on Docker Desktop at the time of writing this:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
+```
+
+Next, you will need to build a local Docker image:
+
+```
+dotnet publish src/DrawTogether/DrawTogether.csproj --os linux --arch x64 -c Release -p:PublishProfile=DefaultContainer
+```
+
+This will tag a local Docker image with the following labels:
+
+* `drawtogether-app:latest`
+* `drawtogether-app:{VERSION}`
+
+Update the [`k8s-web-service.yaml`](k8s/services/k8s-web-service.yaml) to use the `drawtogether-app:{VERSION}` label - if you try to use the `drawtogether-app:latest` Kubernetes will attempt to pull the latest image from Docker Hub.
+
+Finally, launch everything via the `./k8s/deployAll.cmd` - and DrawTogether should be available at http://drawtogether.localdev.me
