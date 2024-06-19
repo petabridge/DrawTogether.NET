@@ -21,7 +21,11 @@
         <!-- Petabridge.Cmd -->
         <ContainerPort Include="9110" Type="tcp" />
     </ItemGroup>
-
+    
+    <PropertyGroup>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+        <TieredPGO>true</TieredPGO>
+    </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Akka.Discovery.KubernetesApi" />
