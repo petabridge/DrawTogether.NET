@@ -14,10 +14,8 @@ namespace DrawTogether.Config;
 
 public static class OpenTelemetryConfig
 {
-    public static IServiceCollection AddDrawTogetherOtel(this IServiceCollection services,
-        string otelHostName = "localhost")
+    public static IServiceCollection AddDrawTogetherOtel(this IServiceCollection services)
     {
-        var otelEndpoint = new Uri($"http://{otelHostName}:4317");
 
         services
             .AddOpenTelemetry()
@@ -31,7 +29,7 @@ public static class OpenTelemetryConfig
                         new KeyValuePair<string, object>("service.version", typeof(OpenTelemetryConfig).Assembly.GetName().Version?.ToString() ?? "unknown")
                     });
             })
-            .UseOtlpExporter(OtlpExportProtocol.Grpc, otelEndpoint)
+            .UseOtlpExporter()
             .WithMetrics(c =>
             {
                 c.AddRuntimeInstrumentation()

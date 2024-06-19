@@ -87,7 +87,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: OTEL_COLLECTOR_URI
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://$(OTEL_COLLECTOR_HOSTNAME).monitoring.pod:4317"
         - name: OTEL_RESOURCE_ATTRIBUTES
           value: "service.namespace=$(NAMESPACE),service.instance.id=$(POD_ID)"
