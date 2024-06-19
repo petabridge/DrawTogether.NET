@@ -48,4 +48,75 @@
       <ProjectReference Include="..\DrawTogether.Email\DrawTogether.Email.csproj" />
     </ItemGroup>
 
+    <!-- taken from https://github.com/baronfel/sdk-container-demo/blob/main/src%2Fsdk-container-demo%2Fsdk-container-demo.csproj#L56-L125 -->
+    <!-- crazy example of the things the SDK should be able to do for us eventually -->
+  <Target Name="MultiArchPublish">
+    <ItemGroup>
+      <!-- first, define the container tags you want to create. these will be the roots of the arch-specific manifests - what users will mostly be using. -->
+      <_TagsToPublish Include="$(ContainerImageTags)" />
+
+      <!-- next, define the architectures you want to publish for. we could have just used RuntimeIdentifiers from above, but I wanted to use golang-style tag parts,
+           so that these images would look and feel like other container images. -->
+      <_RIDItems Include="linux-x64" GolangArch="amd64"/>
+      <_RIDItems Include="linux-arm64" GolangArch="arm64"/>
+    </ItemGroup>
+
+    <!-- Ideally at this point we'd call some target that would map .NET RIDs to Golang architecture items, but this doesn't currently exist -->
+    <!-- <MapRidsToGolangArch RIDs="@(_RIDItems)">
+      <Output TaskParameter="RidsWithArch" ItemName="_RIDItems" />
+    </MapRidsToGolangArch> -->
+
+    <ItemGroup>
+      <!-- this next part is kind of gross - we're trying to construct an MSBuild property value like 'ContainerImageTags=<tagbase>-<arch>;<tagbase>-<arch>'
+           this means we need a map of each specific arch to the list of tags we'd like to push for that arch. the easiest way I found to do that is
+            * create unique items that 'splat' the RIDs across each of the tags
+            * batch by the RIDs - thus capturing all of the tags in the ItemGroup for that batch. we can now transform that ItemGroup to make our final property string -->
+
+      <_RIDSForTag Include="@(_TagsToPublish)" RID="%(_RIDItems.Identity)" GolangArch="%(_RIDItems.GolangArch)" />
+      <_TagsForRID Include="%(_RIDSForTag.RID)" ContainerTags="@(_RIDSForTag->'%(Identity)-%(GolangArch)', ';')" />
+
+      <!-- now that we have our mappings, we can build this project for each RID, passing the full set of tags to create -->
+      <_ContainerPublish
+        Include="$(MSBuildProjectFullPath)"
+        AdditionalProperties="RuntimeIdentifier=%(_TagsForRID.Identity);ContainerImageTags=%(_TagsForRID.ContainerTags)" />
+    </ItemGroup>
+
+    <MSBuild
+        Projects="@(_ContainerPublish)"
+        Targets="Publish;PublishContainer"
+        BuildInParallel="true" />
+
+    <Message Text="Created architecture-specific images, now creating manifest list" Condition="'$(ContainerRegistry)' != ''" Importance="High" />
+
+    <!--
+      If we pushed to an actual registry we can make a multi-arch image here. We need the image name and the tags to do so.
+      However, the PublishContainer targt doesn't actually emit the name or tags so we have to reconstruct it.
+      This is a gap, we should fill it in the SDK.
+
+      NOTE: We can only create the multi-arch manifest if we pushed to a registry. This is a fundamental constraint, so that condition has been applied to all of this code
+    -->
+    <!-- Call ComputeContainerConfig on this project so that the properties it sets are visible -->
+    <MSBuild Projects="$(MSBuildThisFile)" Targets="ComputeContainerConfig" Condition="'$(ContainerRegistry)' != ''" />
+
+    <!-- To make a manifest we need to know the name of the manifest (e.g. mcr.microsoft.com/dotnet/sdk:8.0) and the names of all of the
+         architecture-specific images that go into that manifest (e.g. mcr.microsoft.com/dotnet/sdk:8.0-arm64, mcr.microsoft.com/dotnet/sdk:8.0-amd64, etc).
+         Again, the easiest way to do that is to make add the 'parent' information to some other pience of data that already contains the tag/arch data.
+        -->
+
+    <ItemGroup Condition="'$(ContainerRegistry)' != ''">
+      <!-- We'll need to group by 'tag' here to get the manifest names (the nice tags). To make that easier, let's add the parent manifest name and the
+          'final' container name onto each of our already-RID-aware Tag items.   -->
+      <_RIDSForTag>
+        <FullImageName>$(ContainerRegistry)/$(ContainerRepository):%(Identity)-%(GolangArch)</FullImageName>
+        <ParentManifestName>$(ContainerRegistry)/$(ContainerRepository):%(Identity)</ParentManifestName>
+      </_RIDSForTag>
+    </ItemGroup>
+
+    <!-- armed with that data, we can easily batch these Task calls. '%(_RIDSForTag.ParentManifestName)' filters _RIDSForTag down to all items that have the same ParentManifestName.
+         this means that we can refer to @(_RIDSForTag) here as only the Items for the images for this manifest! From there it's easy to splat the FullImageName onto the CLI calls. -->
+    <Exec Condition="'$(ContainerRegistry)' != ''" Command="docker manifest create %(_RIDSForTag.ParentManifestName) @(_RIDSForTag->'%(FullImageName)', ' ') --amend" />
+    <Exec Condition="'$(ContainerRegistry)' != ''" Command="docker manifest push %(_RIDSForTag.ParentManifestName)" />
+    <Message Text="Created and pushed manifest list %(_RIDSForTag.ParentManifestName)" Condition="'$(ContainerRegistry)' != ''" Importance="High" />
+  </Target>
+
 </Project>
