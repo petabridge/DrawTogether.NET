@@ -1,1 +1,0 @@
-kubectl get all -n webcrawler
