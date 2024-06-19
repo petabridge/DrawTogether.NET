@@ -16,6 +16,9 @@ public static class OpenTelemetryConfig
 {
     public static IServiceCollection AddDrawTogetherOtel(this IServiceCollection services)
     {
+        
+        // work around for https://github.com/open-telemetry/opentelemetry-dotnet/issues/5586
+        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http:/localhost:4317";
 
         services
             .AddOpenTelemetry()
@@ -29,7 +32,7 @@ public static class OpenTelemetryConfig
                         new KeyValuePair<string, object>("service.version", typeof(OpenTelemetryConfig).Assembly.GetName().Version?.ToString() ?? "unknown")
                     });
             })
-            .UseOtlpExporter()
+            .UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri(otlpEndpoint))
             .WithMetrics(c =>
             {
                 c.AddRuntimeInstrumentation()
