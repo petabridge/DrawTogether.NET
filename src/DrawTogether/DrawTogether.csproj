@@ -8,6 +8,7 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <ContainerRepository>drawtogether-app</ContainerRepository>
         <ContainerImageTags>$(VersionPrefix);latest</ContainerImageTags>
+        <RuntimeIdentifiers>linux-x64;linux-arm64</RuntimeIdentifiers>
     </PropertyGroup>
 
     <ItemGroup>
