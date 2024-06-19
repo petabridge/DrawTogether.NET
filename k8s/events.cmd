@@ -1,1 +1,0 @@
-kubectl get event -n webcrawler

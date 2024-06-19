@@ -18,7 +18,7 @@ public static class OpenTelemetryConfig
     {
         
         // work around for https://github.com/open-telemetry/opentelemetry-dotnet/issues/5586
-        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http:/localhost:4317";
+        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4317";
 
         services
             .AddOpenTelemetry()
