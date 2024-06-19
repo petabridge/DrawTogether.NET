@@ -42,10 +42,9 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: web-cluster
+  name: drawtogether
   labels:
     app: drawtogether
-    cluster: webcrawler
 spec:
   serviceName: drawtogether
   replicas: 3
@@ -91,6 +90,8 @@ spec:
           value: "http://$(NODE_IP):4317"
         - name: OTEL_RESOURCE_ATTRIBUTES
           value: "service.namespace=$(NAMESPACE),service.instance.id=$(POD_NAME)"
+        - name: OTEL_SERVICE_NAME
+          value: "drawtogether"
         readinessProbe:
           tcpSocket: 
             port: 8080  
