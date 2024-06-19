@@ -62,6 +62,8 @@ builder.Services.ConfigureAkka(builder.Configuration,
     
 });
 
+builder.Services.AddDrawTogetherOtel();
+
 
 var app = builder.Build();
 
