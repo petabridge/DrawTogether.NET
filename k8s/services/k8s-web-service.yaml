@@ -71,6 +71,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         - name: ConnectionStrings__DefaultConnection
           value: "Server=sqlserver,1644; Database=DrawTogether; User Id=sa; Password=yourStrong(!)Password; TrustServerCertificate=true;"
         - name: AkkaSettings__RemoteOptions__Port
@@ -84,7 +88,7 @@ spec:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+          value: "http://$(NODE_IP):4317"
         - name: OTEL_RESOURCE_ATTRIBUTES
           value: "service.namespace=$(NAMESPACE),service.instance.id=$(POD_NAME)"
         readinessProbe:
