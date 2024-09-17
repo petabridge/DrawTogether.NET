@@ -12,7 +12,7 @@
     <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.27.1" />
     <PackageVersion Include="Akka.Streams" Version="1.5.28" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="1.5.20" />
-    <PackageVersion Include="Grpc.Tools" Version="2.64.0" />
+    <PackageVersion Include="Grpc.Tools" Version="2.66.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.6" />
     <PackageVersion Include="MudBlazor" Version="6.20.0" />
   </ItemGroup>
