@@ -4,13 +4,13 @@
   </PropertyGroup>
   <!-- Akka.NET Package Versions -->
   <ItemGroup>
-    <PackageVersion Include="Akka" Version="1.5.28" />
+    <PackageVersion Include="Akka" Version="1.5.30" />
     <PackageVersion Include="Akka.Cluster.Hosting" Version="1.5.28" />
     <PackageVersion Include="Akka.Discovery.KubernetesApi" Version="1.5.27" />
-    <PackageVersion Include="Akka.Hosting" Version="1.5.28" />
+    <PackageVersion Include="Akka.Hosting" Version="1.5.29" />
     <PackageVersion Include="Akka.Management" Version="1.5.27" />
-    <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.27.1" />
-    <PackageVersion Include="Akka.Streams" Version="1.5.28" />
+    <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.30" />
+    <PackageVersion Include="Akka.Streams" Version="1.5.30" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="1.5.20" />
     <PackageVersion Include="Grpc.Tools" Version="2.64.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.6" />
