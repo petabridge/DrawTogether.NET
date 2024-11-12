@@ -7,8 +7,8 @@
     <PackageVersion Include="Akka" Version="1.5.31" />
     <PackageVersion Include="Akka.Cluster.Hosting" Version="1.5.30.1" />
     <PackageVersion Include="Akka.Discovery.KubernetesApi" Version="1.5.30" />
-    <PackageVersion Include="Akka.Hosting" Version="1.5.30.1" />
-    <PackageVersion Include="Akka.Management" Version="1.5.30" />
+    <PackageVersion Include="Akka.Hosting" Version="1.5.31" />
+    <PackageVersion Include="Akka.Management" Version="1.5.31" />
     <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.30" />
     <PackageVersion Include="Akka.Streams" Version="1.5.31" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="1.5.20" />
