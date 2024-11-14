@@ -42,6 +42,8 @@
         <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+        <PackageReference Include="Petabridge.Cmd.Cluster" />
+        <PackageReference Include="Petabridge.Cmd.Cluster.Sharding" />
     </ItemGroup>
 
     <ItemGroup>

@@ -8,6 +8,9 @@ using DrawTogether.Data;
 using DrawTogether.Email;
 using Microsoft.AspNetCore.ResponseCompression;
 using MudBlazor.Services;
+using Petabridge.Cmd.Cluster;
+using Petabridge.Cmd.Cluster.Sharding;
+using Petabridge.Cmd.Host;
 
 // get ASP.NET Environment
 var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
@@ -58,9 +61,13 @@ builder.Services.AddResponseCompression(opts =>
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.ConfigureAkka(builder.Configuration, 
     (configurationBuilder, provider) =>
-{
-    
-});
+    {
+        configurationBuilder.AddPetabridgeCmd(cmd =>
+        {
+            cmd.RegisterCommandPalette(ClusterCommands.Instance);
+            cmd.RegisterCommandPalette(ClusterShardingCommands.Instance);
+        });
+    });
 
 builder.Services.AddDrawTogetherOtel();
 
