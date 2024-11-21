@@ -14,7 +14,7 @@
     <PackageVersion Include="Akka.Streams.TestKit" Version="1.5.20" />
     <PackageVersion Include="Grpc.Tools" Version="2.67.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
-    <PackageVersion Include="MudBlazor" Version="6.20.0" />
+    <PackageVersion Include="MudBlazor" Version="7.15.0" />
     <PackageVersion Include="Petabridge.Cmd.Cluster" Version="1.4.3" />
     <PackageVersion Include="Petabridge.Cmd.Cluster.Sharding" Version="1.4.3" />
   </ItemGroup>
