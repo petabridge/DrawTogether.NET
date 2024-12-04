@@ -23,7 +23,7 @@ public static class AkkaConfiguration
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (connectionString is null)
-            throw new Exception("DefaultConnection setting is missing");
+            throw new Exception("DefaultConnection ConnectionString is missing");
         
         var roleName = ClusterConstants.DrawStateRoleName;
 

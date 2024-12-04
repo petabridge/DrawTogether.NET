@@ -12,19 +12,32 @@
     <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.30" />
     <PackageVersion Include="Akka.Streams" Version="1.5.31" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="1.5.20" />
-    <PackageVersion Include="Grpc.Tools" Version="2.67.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
-    <PackageVersion Include="MudBlazor" Version="6.20.0" />
+    <PackageVersion Include="Grpc.Tools" Version="2.68.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageVersion>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
+    <PackageVersion Include="MudBlazor" Version="7.15.0" />
     <PackageVersion Include="Petabridge.Cmd.Cluster" Version="1.4.3" />
     <PackageVersion Include="Petabridge.Cmd.Cluster.Sharding" Version="1.4.3" />
   </ItemGroup>
   <!-- ASP.NET Package Versions -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.11" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageVersion>
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.4" />
+  </ItemGroup>
+  <!-- Aspire Package Versions -->
+  <ItemGroup>
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.0.0" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="9.0.0" />
   </ItemGroup>
   <!-- FluentEmail Package Versions -->
   <ItemGroup>
