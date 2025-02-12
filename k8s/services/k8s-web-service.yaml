@@ -59,6 +59,8 @@ spec:
     spec:
       terminationGracePeriodSeconds: 35
       containers:
+      - name: pbm-sidecar
+        image: petabridge/pbm:latest #sidecar
       - name: drawtogether-app
         image: drawtogether-app:0.2.2
         env:
