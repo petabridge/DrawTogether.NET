@@ -1,5 +1,11 @@
 <Project>
   <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  
+  <PropertyGroup>
     <Copyright>Copyright © 2015-2024 Petabridge</Copyright>
     <Authors>Petabridge</Authors>
     <VersionPrefix>0.2.2</VersionPrefix>
@@ -11,8 +17,5 @@
     <PackageLicenseUrl>
     </PackageLicenseUrl>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup>
-    <NetVersion>net8.0</NetVersion>
   </PropertyGroup>
 </Project>

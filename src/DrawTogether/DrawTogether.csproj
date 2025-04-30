@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>aspnet-DrawTogether-519D8737-B9C5-4479-BE39-7C98C7D228C7</UserSecretsId>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <ContainerRepository>drawtogether-app</ContainerRepository>
@@ -32,6 +29,7 @@
         <PackageReference Include="Akka.Discovery.KubernetesApi" />
         <PackageReference Include="Akka.Management" />
         <PackageReference Include="Akka.Persistence.Sql.Hosting" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
         <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore"/>
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
