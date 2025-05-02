@@ -5,6 +5,7 @@
     <AkkaHostingVersion>1.5.40</AkkaHostingVersion>
     <AkkaManagementVersion>1.5.37</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.4</PetabridgeCmdVersion>
+    <AspireVersion>9.2.1</AspireVersion>
   </PropertyGroup>
   <!-- Akka.NET Package Versions -->
   <ItemGroup>
@@ -34,14 +35,14 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.4" />
   </ItemGroup>
   <!-- Aspire Package Versions -->
   <ItemGroup>
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.0.0" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="9.0.0" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="$(AspireVersion)" />
   </ItemGroup>
   <!-- FluentEmail Package Versions -->
   <ItemGroup>
