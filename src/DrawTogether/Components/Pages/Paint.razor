@@ -30,8 +30,8 @@
         <MudMenu Icon="@Icons.Material.Filled.Group" Color="MudBlazor.Color.Inherit" Dense="true">
             <MudText Typo="Typo.subtitle2" Class="px-4 py-2">Connected Users</MudText>
             <MudDivider />
-            @foreach (var user in ConnectedUsers)
-            {
+        @foreach (var user in ConnectedUsers)
+        {
                 <MudMenuItem>@user.IdentityName</MudMenuItem>
             }
         </MudMenu>
@@ -39,18 +39,24 @@
     
     <!-- Main Content Area -->
     <div class="d-flex flex-grow-1 position-relative" style="height: calc(100vh - 48px); overflow: hidden;">
-        <!-- Fixed Vertical Toolstrip -->
-        <MudPaper Elevation="2" Class="pa-2" Style="min-width: 200px; max-width: 200px; height: 100%; overflow-y: auto;">
+        <!-- Fixed Vertical Toolstrip with flexible width -->
+        <MudPaper Elevation="2" Class="pa-2" Style="width: auto; min-width: 280px; height: 100%; overflow-y: auto;">
             <MudText Typo="Typo.subtitle1" Class="mb-2">Drawing Tools</MudText>
             
-            <div class="mb-3">
+            <div class="mb-3 d-flex justify-center">
                 <MudColorPicker 
-                    Label="Color" 
                     @bind-Text="_colorString" 
-                    Style="@($"color: {_colorString};")" 
+                    Label="Color" 
+                    Style="@($"color: {_colorString}; width: 100%;")" 
                     Placeholder="Select Color" 
                     PickerVariant="PickerVariant.Static"
-                    Class="pb-2"/>
+                    DisableModeSwitch="false"
+                    DisablePreview="false"
+                    DisableInputs="true"
+                    DisableSliders="false"
+                    Class="pb-2"
+                    ColorPickerView="ColorPickerView.Spectrum"
+                    Elevation="0" />
             </div>
             
             <MudText Typo="Typo.body2" Class="mb-1">Cursor Size: @_cursorSize.Value</MudText>
@@ -68,7 +74,7 @@
                 OnClick="ResetScreen">
                 Clear Screen
             </MudButton>
-        </MudPaper>
+</MudPaper>
         
         <!-- Drawing Area with proper boundaries -->
         <MudPaper Elevation="3" Class="flex-grow-1 position-relative" Style="height: 100%; overflow: hidden;">
@@ -92,15 +98,15 @@
                             fillColor="@_color.HexCodeOrColorName" 
                             borderColor="@_color.HexCodeOrColorName"/>
                         
-                        @foreach (var connectedStroke in Strokes.Values)
-                        {
+                @foreach (var connectedStroke in Strokes.Values)
+                {
                             <Curve 
                                 Points="@connectedStroke.Points" 
                                 Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" 
                                 StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
-                        }
+                }
                     </g>
-                </svg>
+            </svg>
             </div>
         </MudPaper>
     </div>
