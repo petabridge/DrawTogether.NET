@@ -11,6 +11,7 @@ var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService
 builder.AddProject<Projects.DrawTogether>("DrawTogether")
     .WithReference(db, "DefaultConnection")
     .WaitForCompletion(migrationService);
+   // .WithReplicas(3);
 
 builder
     .Build()
