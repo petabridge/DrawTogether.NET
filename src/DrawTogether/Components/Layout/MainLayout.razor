@@ -1,23 +1,92 @@
 ﻿@inherits LayoutComponentBase
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavigationManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu/>
-    </div>
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+<MudLayout>
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudLink Href="/" Underline="Underline.None" Color="Color.Inherit">
+            <MudText Typo="Typo.h6" Class="mr-4">DrawTogether</MudText>
+        </MudLink>
+        
+        <AuthorizeView>
+            <Authorized>
+                <MudButton 
+                    StartIcon="@Icons.Material.Filled.Home" 
+                    Color="Color.Inherit" 
+                    Href="/" 
+                    Class="ml-2">Home</MudButton>
+                <MudButton 
+                    StartIcon="@Icons.Material.Filled.Add" 
+                    Color="Color.Inherit" 
+                    Href="NewPaint" 
+                    Class="ml-2">New Drawing</MudButton>
+                <MudButton 
+                    StartIcon="@Icons.Material.Filled.Person" 
+                    Color="Color.Inherit" 
+                    Href="Account/Manage" 
+                    Class="ml-2">@context.User.Identity?.Name</MudButton>
+                
+                <form method="post" action="Account/Logout" style="display: inline-block;">
+                    <AntiforgeryToken />
+                    <input name="ReturnUrl" type="hidden" value="@_returnUrl" />
+                    <MudButton 
+                        StartIcon="@Icons.Material.Filled.ExitToApp" 
+                        Color="Color.Inherit"
+                        ButtonType="ButtonType.Submit"
+                        Class="ml-2">Logout</MudButton>
+                </form>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton 
+                    StartIcon="@Icons.Material.Filled.Home" 
+                    Color="Color.Inherit" 
+                    Href="/" 
+                    Class="ml-2">Home</MudButton>
+                <MudButton 
+                    StartIcon="@Icons.Material.Filled.Lock" 
+                    Color="Color.Inherit" 
+                    Href="auth" 
+                    Class="ml-2">Auth Required</MudButton>
+                <MudButton 
+                    StartIcon="@Icons.Material.Filled.PersonAdd" 
+                    Color="Color.Inherit" 
+                    Href="Account/Register" 
+                    Class="ml-2">Register</MudButton>
+                <MudButton 
+                    StartIcon="@Icons.Material.Filled.Login" 
+                    Color="Color.Inherit" 
+                    Href="Account/Login" 
+                    Class="ml-2">Login</MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+        
+        <MudSpacer />
+        <MudButton 
+            StartIcon="@Icons.Material.Filled.Info" 
+            Color="Color.Inherit" 
+            Href="/about" 
+            Class="mr-2">About</MudButton>
+    </MudAppBar>
+    
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="pt-2 px-1">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    private string _returnUrl => NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+}

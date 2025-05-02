@@ -2,6 +2,7 @@
 @using System.Diagnostics
 @using System.Security.Claims
 @using System.Threading.Channels
+@using System.Threading.Tasks
 @using Akka.Actor
 @using Akka.Hosting
 @using DrawTogether.Actors.Local
@@ -11,55 +12,103 @@
 @using DrawTogether.Entities.Drawings.Messages
 @using DrawTogether.Entities.Users
 @using Microsoft.AspNetCore.Authorization
-@using Color = DrawTogether.Entities.Drawings.Color
+@using DrawingColor = DrawTogether.Entities.Drawings.Color
+@using MudBlazor
+@using Microsoft.Extensions.Logging
 @inject NavigationManager NavigationManager;
 @implements IAsyncDisposable;
 @inject AuthenticationStateProvider GetAuthenticationStateAsync
 @inject IRequiredActor<LocalDrawingSessionActor> LocalDrawingSessionActor;
+@inject ILogger<Paint> Logger
 @attribute [Authorize]
 
-
-<h3>Paint with [@ConnectedUsers.Count] People</h3>
-<MudPaper Class="align-content-center d-flex" Elevation="0">
-    <MudStack Row>
-        <MudText Typo="Typo.h6">Connected Users:</MudText>
+<div class="d-flex flex-column h-100" style="height: 100vh; overflow: hidden;">
+    <!-- Compact Header with dropdown -->
+    <MudAppBar Dense="true" Color="MudBlazor.Color.Primary" Class="px-2" Style="height: 48px;" Fixed="false">
+        <MudText Typo="Typo.h6">Paint with [@ConnectedUsers.Count] People</MudText>
+        <MudSpacer />
+        <MudMenu Icon="@Icons.Material.Filled.Group" Color="MudBlazor.Color.Inherit" Dense="true">
+            <MudText Typo="Typo.subtitle2" Class="px-4 py-2">Connected Users</MudText>
+            <MudDivider />
         @foreach (var user in ConnectedUsers)
         {
-            <MudText Typo="Typo.body1">@user.IdentityName</MudText>
-        }
-    </MudStack>
+                <MudMenuItem>@user.IdentityName</MudMenuItem>
+            }
+        </MudMenu>
+    </MudAppBar>
+    
+    <!-- Main Content Area -->
+    <div class="d-flex flex-grow-1 position-relative" style="height: calc(100vh - 48px); overflow: hidden;">
+        <!-- Fixed Vertical Toolstrip with flexible width -->
+        <MudPaper Elevation="2" Class="pa-2" Style="width: auto; min-width: 280px; height: 100%; overflow-y: auto;">
+            <MudText Typo="Typo.subtitle1" Class="mb-2">Drawing Tools</MudText>
+            
+            <div class="mb-3 d-flex justify-center">
+                <MudColorPicker 
+                    @bind-Text="_colorString" 
+                    Label="Color" 
+                    Style="@($"color: {_colorString}; width: 100%;")" 
+                    Placeholder="Select Color" 
+                    PickerVariant="PickerVariant.Static"
+                    Class="pb-2"
+                    ColorPickerView="ColorPickerView.Spectrum" />
+            </div>
+            
+            <MudText Typo="Typo.body2" Class="mb-1">Cursor Size: @_cursorSize.Value</MudText>
+            <MudSlider 
+                Value="@_cursorSize.Value" 
+                Min="1" 
+                Max="50" 
+                ValueChanged="@((int value) => UpdateCursorSize(value))"
+                Class="mb-4"/>
+            
+            <MudButton 
+                Variant="Variant.Filled" 
+                Color="MudBlazor.Color.Error" 
+                FullWidth="true"
+                OnClick="ResetScreen">
+                Clear Screen
+            </MudButton>
 </MudPaper>
-<MudGrid>
-    <MudItem xs="2">
-        <MudStack>
-            <MudPaper Elevation="0">
-                <MudColorPicker Label="Color" @bind-Text="_colorString" Style="@($"color: {_colorString};")" Placeholder="Select Color" PickerVariant="PickerVariant.Static"/>
-            </MudPaper>
-            <MudPaper Elevation="0">
-                <MudSlider Value="@_cursorSize.Value" ValueLabel="true" Min="1" Max="50" ValueChanged="@((int value) => UpdateCursorSize(value))">Cursor Size</MudSlider>
-            </MudPaper>
-            <MudPaper Elevation="0" Class="align-content-center">
-                <button class="btn btn-primary" id="reset" @onclick="ResetScreen">Clear Screen</button>
-            </MudPaper>
-        </MudStack>
-    </MudItem>
-    <MudItem xs="10">
-        <section id="paint" style="background-color: cornsilk; width: 900px; height: 500px;"
-                 @onmousemove="CursorMove" @onmousedown="CursorDown" @onmouseup="CursorUp">
-            <svg width="900" height="500">
-                <Circle radius="@_cursorSize.Value" cursorId="@_currentUserId!.IdentityName" cX="@cX" cY="@cY" fillColor="@_color.HexCodeOrColorName" borderColor="@_color.HexCodeOrColorName"/>
-                @foreach (var connectedStroke in Strokes.Values)
-                {
-                    <Curve Points="@connectedStroke.Points" Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
-                }
-            </svg>
-        </section>
-    </MudItem>
-</MudGrid>
+        
+        <!-- Drawing Area with proper boundaries -->
+        <MudPaper Elevation="3" Class="flex-grow-1 position-relative" Style="height: 100%; overflow: hidden;">
+            <div id="paint" 
+                 style="background-color: cornsilk; width: 100%; height: 100%;"
+                 @onmousemove="CursorMove" 
+                 @onmousedown="CursorDown" 
+                 @onmouseup="CursorUp"
+                 @ontouchmove="HandleTouchMove"
+                 @ontouchstart="HandleTouchStart"
+                 @ontouchend="HandleTouchEnd">
+                
+                <svg width="100%" height="100%" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1200 800">
+                    <g>
+                        <Circle 
+                            radius="@_cursorSize.Value" 
+                            cursorId="@_currentUserId!.IdentityName" 
+                            cX="@cX" 
+                            cY="@cY" 
+                            fillColor="@Color.HexCodeOrColorName" 
+                            borderColor="@Color.HexCodeOrColorName"/>
+                        
+                        @foreach (var connectedStroke in Strokes.Values)
+                        {
+                            <Curve 
+                                Points="@connectedStroke.Points" 
+                                Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" 
+                                StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
+                        }
+                    </g>
+                </svg>
+            </div>
+        </MudPaper>
+    </div>
+</div>
 
 @code {
 
-    [Parameter] public string SessionId { get; set; }
+    [Parameter] public required string SessionId { get; set; }
 
     public Dictionary<StrokeId, ConnectedStroke> Strokes { get; set; } = new();
 
@@ -126,7 +175,7 @@
             _ = RunDataPump();
         }
     }
-
+    
     async Task RunDataPump()
     {
         Debug.Assert(_eventStream != null, nameof(_eventStream) + " != null");
@@ -175,24 +224,22 @@
     double cX = 110.0d;
     double cY = 110.0d;
     private string _colorString = "black";
-    private Color _color => new(_colorString);
+    private DrawingColor Color => new(_colorString);
     private GreaterThanZeroInteger _cursorSize = new(8);
-
-    private string mousePointerMessage = "foo";
-    private string blazorHubDebugMessage = "bar";
 
     private void CursorDown(MouseEventArgs e)
     {
         if (e.Buttons == 1)
         {
-            OnNext(new Point(e.OffsetX, e.OffsetY));
+            Point transformedPoint = TransformCoordinates(e.OffsetX, e.OffsetY);
+            OnNext(transformedPoint);
         }
     }
 
     private void OnNext(Point point)
     {
         _localActorHandle?.Tell(new LocalPaintProtocol
-            .AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
+            .AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, Color));
     }
 
     private void CursorMove(MouseEventArgs e)
@@ -201,7 +248,8 @@
         cY = e.OffsetY;
         if (e.Buttons == 1)
         {
-            OnNext(new Point(e.OffsetX, e.OffsetY));
+            Point transformedPoint = TransformCoordinates(e.OffsetX, e.OffsetY);
+            OnNext(transformedPoint);
         }
     }
 
@@ -209,8 +257,39 @@
     {
         if (e.Buttons == 1)
         {
-            OnNext(new Point(e.OffsetX, e.OffsetY));
+            Point transformedPoint = TransformCoordinates(e.OffsetX, e.OffsetY);
+            OnNext(transformedPoint);
         }
+    }
+
+    // Touch event handlers for mobile support
+    private void HandleTouchStart(TouchEventArgs e)
+    {
+        if (e.TargetTouches.Length > 0)
+        {
+            var touch = e.TargetTouches[0];
+            cX = touch.ClientX;
+            cY = touch.ClientY;
+            Point transformedPoint = TransformCoordinates(touch.ClientX, touch.ClientY);
+            OnNext(transformedPoint);
+        }
+    }
+
+    private void HandleTouchMove(TouchEventArgs e)
+    {
+        if (e.TargetTouches.Length > 0)
+        {
+            var touch = e.TargetTouches[0];
+            cX = touch.ClientX;
+            cY = touch.ClientY;
+            Point transformedPoint = TransformCoordinates(touch.ClientX, touch.ClientY);
+            OnNext(transformedPoint);
+        }
+    }
+
+    private void HandleTouchEnd(TouchEventArgs e)
+    {
+        // No additional actions needed for touch end in this case
     }
 
     private void UpdateCursorSize(int cursorSize)
@@ -225,6 +304,14 @@
         _localActorHandle.Tell(new LocalPaintProtocol.ClearDrawingSession(DrawingSessionId, _currentUserId));
     }
 
+    // Helper method to transform viewport coordinates to SVG coordinates
+    private static Point TransformCoordinates(double x, double y)
+    {
+        // For now just return the original coordinates
+        // In a more complex implementation, you might need to apply scaling based on
+        // the actual dimensions of the SVG viewport vs. the DOM element
+        return new Point(x, y);
+    }
 
     public async ValueTask DisposeAsync()
     {
