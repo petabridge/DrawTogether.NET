@@ -33,6 +33,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+builder.Services.AddDrawTogetherSettings(builder.Configuration);
 builder.Services.AddEmailServices<ApplicationUser>(builder.Configuration); // add email services
 
 builder.Services.AddAuthentication(options =>
@@ -46,7 +47,12 @@ builder.AddSqlServerDbContext<ApplicationDbContext>("DefaultConnection");
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+var requireConfirmedAccount = builder.Configuration.GetValue<bool>("DrawTogether:RequireEmailConfirmation");
+
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = requireConfirmedAccount;
+    })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
