@@ -17,7 +17,7 @@
                 <MudButton 
                     StartIcon="@Icons.Material.Filled.Home" 
                     Color="Color.Inherit" 
-                    Href="" 
+                    Href="/" 
                     Class="ml-2">Home</MudButton>
                 <MudButton 
                     StartIcon="@Icons.Material.Filled.Add" 
@@ -29,17 +29,22 @@
                     Color="Color.Inherit" 
                     Href="Account/Manage" 
                     Class="ml-2">@context.User.Identity?.Name</MudButton>
-                <MudButton 
-                    StartIcon="@Icons.Material.Filled.ExitToApp" 
-                    Color="Color.Inherit" 
-                    Href="Account/Logout"
-                    Class="ml-2">Logout</MudButton>
+                
+                <form method="post" action="Account/Logout" style="display: inline-block;">
+                    <AntiforgeryToken />
+                    <input name="ReturnUrl" type="hidden" value="@_returnUrl" />
+                    <MudButton 
+                        StartIcon="@Icons.Material.Filled.ExitToApp" 
+                        Color="Color.Inherit"
+                        ButtonType="ButtonType.Submit"
+                        Class="ml-2">Logout</MudButton>
+                </form>
             </Authorized>
             <NotAuthorized>
                 <MudButton 
                     StartIcon="@Icons.Material.Filled.Home" 
                     Color="Color.Inherit" 
-                    Href="" 
+                    Href="/" 
                     Class="ml-2">Home</MudButton>
                 <MudButton 
                     StartIcon="@Icons.Material.Filled.Lock" 
@@ -64,7 +69,7 @@
             StartIcon="@Icons.Material.Filled.Info" 
             Color="Color.Inherit" 
             Href="/about" 
-            Edge="Edge.End">About</MudButton>
+            Class="mr-2">About</MudButton>
     </MudAppBar>
     
     <MudMainContent>
