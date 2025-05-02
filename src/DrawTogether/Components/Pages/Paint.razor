@@ -80,28 +80,27 @@
                  @onmouseup="CursorUp"
                  @ontouchmove="HandleTouchMove"
                  @ontouchstart="HandleTouchStart"
-                 @ontouchend="HandleTouchEnd"
-                 @ref="canvasElement">
+                 @ontouchend="HandleTouchEnd">
                 
                 <svg width="100%" height="100%" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1200 800">
-                    <g transform="@_transformMatrix">
+                    <g>
                         <Circle 
                             radius="@_cursorSize.Value" 
                             cursorId="@_currentUserId!.IdentityName" 
                             cX="@cX" 
                             cY="@cY" 
-                            fillColor="@_color.HexCodeOrColorName" 
-                            borderColor="@_color.HexCodeOrColorName"/>
+                            fillColor="@Color.HexCodeOrColorName" 
+                            borderColor="@Color.HexCodeOrColorName"/>
                         
-                @foreach (var connectedStroke in Strokes.Values)
-                {
+                        @foreach (var connectedStroke in Strokes.Values)
+                        {
                             <Curve 
                                 Points="@connectedStroke.Points" 
                                 Stroke="@connectedStroke.StrokeColor.HexCodeOrColorName" 
                                 StrokeWidth="@connectedStroke.StrokeWidth.Value"/>
-                }
+                        }
                     </g>
-            </svg>
+                </svg>
             </div>
         </MudPaper>
     </div>
@@ -124,9 +123,6 @@
     private IActorRef? _localActorHandle;
     private readonly CancellationTokenSource _shutdownCts = new();
     private CancellationTokenSource? _readDoneCts;
-    
-    private ElementReference canvasElement;
-    private string _transformMatrix = ""; // For cursor position correction
 
     private ClaimsPrincipal? _user;
     private UserId? _currentUserId;
@@ -179,30 +175,7 @@
             _ = RunDataPump();
         }
     }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            // Initialize canvas measurements for cursor correction
-            await CalculateCanvasTransform();
-        }
-    }
-
-    private async Task CalculateCanvasTransform()
-    {
-        try
-        {
-            // For now, use a simple transform that works with our viewBox dimensions
-            _transformMatrix = "";
-            await InvokeAsync(StateHasChanged);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error calculating canvas transform");
-        }
-    }
-
+    
     async Task RunDataPump()
     {
         Debug.Assert(_eventStream != null, nameof(_eventStream) + " != null");
@@ -251,21 +224,22 @@
     double cX = 110.0d;
     double cY = 110.0d;
     private string _colorString = "black";
-    private DrawingColor _color => new(_colorString);
+    private DrawingColor Color => new(_colorString);
     private GreaterThanZeroInteger _cursorSize = new(8);
 
     private void CursorDown(MouseEventArgs e)
     {
         if (e.Buttons == 1)
         {
-            OnNext(new Point(e.OffsetX, e.OffsetY));
+            Point transformedPoint = TransformCoordinates(e.OffsetX, e.OffsetY);
+            OnNext(transformedPoint);
         }
     }
 
     private void OnNext(Point point)
     {
         _localActorHandle?.Tell(new LocalPaintProtocol
-            .AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, _color));
+            .AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, Color));
     }
 
     private void CursorMove(MouseEventArgs e)
@@ -274,7 +248,8 @@
         cY = e.OffsetY;
         if (e.Buttons == 1)
         {
-            OnNext(new Point(e.OffsetX, e.OffsetY));
+            Point transformedPoint = TransformCoordinates(e.OffsetX, e.OffsetY);
+            OnNext(transformedPoint);
         }
     }
 
@@ -282,7 +257,8 @@
     {
         if (e.Buttons == 1)
         {
-            OnNext(new Point(e.OffsetX, e.OffsetY));
+            Point transformedPoint = TransformCoordinates(e.OffsetX, e.OffsetY);
+            OnNext(transformedPoint);
         }
     }
 
@@ -294,7 +270,8 @@
             var touch = e.TargetTouches[0];
             cX = touch.ClientX;
             cY = touch.ClientY;
-            OnNext(new Point(touch.ClientX, touch.ClientY));
+            Point transformedPoint = TransformCoordinates(touch.ClientX, touch.ClientY);
+            OnNext(transformedPoint);
         }
     }
 
@@ -305,7 +282,8 @@
             var touch = e.TargetTouches[0];
             cX = touch.ClientX;
             cY = touch.ClientY;
-            OnNext(new Point(touch.ClientX, touch.ClientY));
+            Point transformedPoint = TransformCoordinates(touch.ClientX, touch.ClientY);
+            OnNext(transformedPoint);
         }
     }
 
@@ -326,6 +304,14 @@
         _localActorHandle.Tell(new LocalPaintProtocol.ClearDrawingSession(DrawingSessionId, _currentUserId));
     }
 
+    // Helper method to transform viewport coordinates to SVG coordinates
+    private static Point TransformCoordinates(double x, double y)
+    {
+        // For now just return the original coordinates
+        // In a more complex implementation, you might need to apply scaling based on
+        // the actual dimensions of the SVG viewport vs. the DOM element
+        return new Point(x, y);
+    }
 
     public async ValueTask DisposeAsync()
     {
