@@ -6,7 +6,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <Copyright>Copyright © 2015-2024 Petabridge</Copyright>
+    <Copyright>Copyright © 2015-$([System.DateTime]::Now.Year) Petabridge</Copyright>
     <Authors>Petabridge</Authors>
     <VersionPrefix>0.2.2</VersionPrefix>
     <PackageReleaseNotes>Added support for loading configuration via Msft.Ext-compatible environment variables, `appSettings.json`, and `appSettings.{ASPNETCORE_ENVIRONMENT}.json`</PackageReleaseNotes>
