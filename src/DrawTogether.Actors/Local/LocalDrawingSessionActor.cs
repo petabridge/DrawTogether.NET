@@ -12,13 +12,9 @@ using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
 using static DrawTogether.Actors.Local.LocalPaintProtocol;
+using static DrawTogether.Actors.Local.StrokeBuilder;
 
 namespace DrawTogether.Actors.Local;
-
-public static class StrokeBatcher
-{
-    
-}
 
 /// <summary>
 /// A local handle for a specific drawing instance
@@ -211,27 +207,6 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     private StrokeId NextStrokeId(UserId userId)
     {
         return new StrokeId(MurmurHash.StringHash(userId.IdentityName) + _randomSeed + _strokeIdCounter++);
-    }
-    
-    private static IEnumerable<ConnectedStroke> ComputeStrokes(IReadOnlyList<AddPointToConnectedStroke> actions, 
-        ILoggingAdapter log,
-        Func<UserId, StrokeId> strokeIdGenerator)
-    {
-        // group all the actions by user
-        var userActions = actions.GroupBy(a => a.UserId);
-
-        foreach (var userStuff in userActions)
-        {
-            var userId = userStuff.Key;
-            var connectedStroke = new ConnectedStroke(strokeIdGenerator(userId))
-            {
-                Points = userStuff.Select(a => a.Point).ToList(),
-                StrokeColor = userStuff.First().StrokeColor,
-                StrokeWidth = userStuff.First().StrokeWidth
-            };
-
-            yield return connectedStroke;
-        }
     }
     
     private void PublishEvent(IDrawingSessionEvent drawingEvent)
