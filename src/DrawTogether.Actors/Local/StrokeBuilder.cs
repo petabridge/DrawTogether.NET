@@ -15,9 +15,9 @@ public static class StrokeBuilder
     {
         // group all the actions by user
         var userActions = actions.GroupBy(a => a.UserId).ToList();
-        
-        log?.Info("BATCHED {0} create actions from {1} users", actions.Count, userActions.Count);
 
+        log?.Info("BATCHED {0} create actions from {1} users", actions.Count, userActions.Count);
+        
         foreach (var userStuff in userActions)
         {
             var userId = userStuff.Key;
