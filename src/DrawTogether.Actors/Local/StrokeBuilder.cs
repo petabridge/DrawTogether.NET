@@ -2,9 +2,11 @@ using Akka;
 using Akka.Event;
 using Akka.Streams.Dsl;
 using Akka.Util;
+using DrawTogether.Entities;
 using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
+using System.Collections.Immutable;
 
 namespace DrawTogether.Actors.Local;
 
@@ -21,7 +23,8 @@ public static class StrokeBuilder
     }
 
     public static Source<IDrawingSessionCommand, NotUsed> CreateStrokeSource(
-        Source<LocalPaintProtocol.AddPointToConnectedStroke, NotUsed> inputSource, ILoggingAdapter? log, DrawingSessionId drawingSessionId, TimeSpan batchWhen, int batchSize)
+        Source<LocalPaintProtocol.AddPointToConnectedStroke, NotUsed> inputSource, ILoggingAdapter? log, 
+        DrawingSessionId drawingSessionId, TimeSpan batchWhen, int batchSize)
     {
         // need to assert that batchSize > 0 and batchWhen > 0
         if (batchSize <= 0)
@@ -29,30 +32,22 @@ public static class StrokeBuilder
         if (batchWhen <= TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(batchWhen), "Batch when must be greater than 0");
         
-        var randomSeed = Random.Shared.Next();
-        var strokeIdCounter = 0;
-        
-        Func<UserId, StrokeId> nextStrokeId = userId =>
-        { 
-            var id = new StrokeId(MurmurHash.StringHash(userId.IdentityName) + randomSeed + strokeIdCounter++);
-            return id;
-        };
-
-        return inputSource.GroupedWithin(batchSize, batchWhen)
-            .Select(c => ComputeStrokes(c.ToList(), log, nextStrokeId))
-            .SelectMany(c => c)
-            .Select(IDrawingSessionCommand (c) => new DrawingSessionCommands.AddStroke(drawingSessionId, c));
+        // Use the extension method for a cleaner implementation
+        log?.Info("Creating stroke source with batch size {0}, batch time {1}ms", batchSize, batchWhen.TotalMilliseconds);
+        return inputSource.ToConnectedStrokes(drawingSessionId, batchSize, batchWhen);
     }
     
+    // This method is maintained for backward compatibility with tests and other code
     public static IEnumerable<ConnectedStroke> ComputeStrokes(IReadOnlyList<LocalPaintProtocol.AddPointToConnectedStroke> actions, 
         ILoggingAdapter? log,
         Func<UserId, StrokeId> strokeIdGenerator)
     {
-        // group all the actions by user
+        // Group all the actions by user
         var userActions = actions.GroupBy(a => a.UserId).ToList();
 
         log?.Info("BATCHED {0} create actions from {1} users", actions.Count, userActions.Count);
         
+        // Process each user's batch of actions to create strokes
         foreach (var userStuff in userActions)
         {
             var userId = userStuff.Key;

@@ -1,0 +1,235 @@
+using Akka;
+using Akka.Streams;
+using Akka.Streams.Dsl;
+using Akka.Streams.Stage;
+using Akka.Util;
+using Akka.Event;
+using DrawTogether.Entities;
+using DrawTogether.Entities.Drawings;
+using DrawTogether.Entities.Drawings.Messages;
+using DrawTogether.Entities.Users;
+using System.Collections.Immutable;
+
+namespace DrawTogether.Actors.Local;
+
+/// <summary>
+/// A custom Akka.Streams stage that maintains continuity between strokes for each user.
+/// This stage runs downstream from the GroupedWithin operator and ensures that strokes 
+/// from the same continuous drawing action are connected properly without visible gaps.
+/// </summary>
+public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>, IEnumerable<ConnectedStroke>>>
+{
+    private readonly TimeSpan _inactivityTimeout;
+    
+    // Shape definition for this stage
+    public override FlowShape<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>, IEnumerable<ConnectedStroke>> Shape { get; }
+
+    // Constructor
+    public StrokeContinuityStage(TimeSpan? inactivityTimeout = null)
+    {
+        _inactivityTimeout = inactivityTimeout ?? TimeSpan.FromMilliseconds(250);
+        var inlet = new Inlet<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>>("StrokeContinuity.in");
+        var outlet = new Outlet<IEnumerable<ConnectedStroke>>("StrokeContinuity.out");
+        Shape = new FlowShape<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>, IEnumerable<ConnectedStroke>>(inlet, outlet);
+    }
+
+    // Create logic for this stage - must be protected to match base class
+    protected override GraphStageLogic CreateLogic(Attributes inheritedAttributes) => new Logic(this);
+
+    // Inner logic class that implements the stage behavior
+    private class Logic : GraphStageLogic
+    {
+        private readonly StrokeContinuityStage _stage;
+        
+        // State tracking for active strokes by user
+        private readonly Dictionary<UserId, ActiveStrokeInfo> _activeStrokeInfo = new();
+        
+        // Class to track the last point and properties of the active stroke
+        private class ActiveStrokeInfo
+        {
+            public ActiveStrokeInfo(Point lastPoint, Color strokeColor, GreaterThanZeroInteger strokeWidth)
+            {
+                LastPoint = lastPoint;
+                LastUpdate = DateTime.UtcNow;
+                StrokeColor = strokeColor;
+                StrokeWidth = strokeWidth;
+            }
+            
+            public Point LastPoint { get; set; }
+            public DateTime LastUpdate { get; set; }
+            public Color StrokeColor { get; }
+            public GreaterThanZeroInteger StrokeWidth { get; }
+        }
+
+        // Random seed for generating stroke IDs
+        private readonly int _randomSeed = Random.Shared.Next();
+        private int _strokeIdCounter = 0;
+
+        public Logic(StrokeContinuityStage stage) : base(stage.Shape)
+        {
+            _stage = stage;
+            
+            // Set up handlers for the inlet
+            SetHandler(stage.Shape.Inlet, onPush: () =>
+            {
+                var batch = Grab(stage.Shape.Inlet);
+                var strokes = ProcessBatch(batch);
+                Push(stage.Shape.Outlet, strokes);
+            });
+            
+            // Set up handlers for the outlet
+            SetHandler(stage.Shape.Outlet, onPull: () =>
+            {
+                Pull(stage.Shape.Inlet);
+            });
+        }
+        
+        // Clean up inactive strokes
+        private void CleanupInactiveStrokes()
+        {
+            var now = DateTime.UtcNow;
+            var inactiveUsers = _activeStrokeInfo
+                .Where(kv => (now - kv.Value.LastUpdate) > _stage._inactivityTimeout)
+                .Select(kv => kv.Key)
+                .ToList();
+                
+            foreach (var user in inactiveUsers)
+            {
+                _activeStrokeInfo.Remove(user);
+                Log.Info("Removed inactive stroke info for user {0}", user.IdentityName);
+            }
+        }
+        
+        // Generate a new stroke ID
+        private StrokeId GenerateStrokeId(UserId userId)
+        {
+            return new StrokeId(MurmurHash.StringHash(userId.IdentityName) + _randomSeed + _strokeIdCounter++);
+        }
+        
+        // Process a batch of points and maintain stroke continuity
+        private IEnumerable<ConnectedStroke> ProcessBatch(ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke> batch)
+        {
+            if (batch.Count == 0)
+                return Enumerable.Empty<ConnectedStroke>();
+                
+            // Clean up inactive strokes first
+            CleanupInactiveStrokes();
+            
+            // Group points by user
+            var pointsByUser = batch.GroupBy(p => p.UserId).ToList();
+            var resultStrokes = new List<ConnectedStroke>();
+            var now = DateTime.UtcNow;
+            
+            foreach (var userPoints in pointsByUser)
+            {
+                var userId = userPoints.Key;
+                var pointsToAdd = userPoints.Select(a => a.Point).ToList();
+                var strokeColor = userPoints.First().StrokeColor;
+                var strokeWidth = userPoints.First().StrokeWidth;
+                
+                // Always generate a new stroke ID for each batch
+                var strokeId = GenerateStrokeId(userId);
+                
+                // Check if this user has an active stroke
+                if (_activeStrokeInfo.TryGetValue(userId, out var activeInfo))
+                {
+                    // Check if stroke properties have changed
+                    bool strokePropertiesChanged = 
+                        !activeInfo.StrokeColor.Equals(strokeColor) || 
+                        activeInfo.StrokeWidth.Value != strokeWidth.Value;
+                    
+                    if (strokePropertiesChanged)
+                    {
+                        // Properties changed - don't need special handling, just track the new properties
+                        Log.Info("Stroke properties changed for user {0}, creating new stroke", userId.IdentityName);
+                    }
+                    else if (pointsToAdd.Count > 0)
+                    {
+                        // If the first point of this batch isn't close to the last point of the previous batch,
+                        // something unusual happened (e.g., user clicked somewhere else) - no need for continuity
+                        double distance = CalculateDistance(activeInfo.LastPoint, pointsToAdd[0]);
+                        
+                        if (distance <= 5.0) // Threshold for what we consider "continuous"
+                        {
+                            // For perfect continuity, replace the first point with the last point from previous stroke
+                            // This ensures there's not even a sub-pixel gap between strokes
+                            pointsToAdd[0] = activeInfo.LastPoint;
+                            Log.Debug("Ensured continuity for user {0} (gap was {1:F2}px)", userId.IdentityName, distance);
+                        }
+                        else
+                        {
+                            Log.Info("Gap detected for user {0} ({1:F2}px) - likely new stroke intended", userId.IdentityName, distance);
+                        }
+                    }
+                }
+                
+                // Create the stroke with its unique ID
+                var connectedStroke = new ConnectedStroke(strokeId)
+                {
+                    Points = pointsToAdd,
+                    StrokeColor = strokeColor,
+                    StrokeWidth = strokeWidth
+                };
+                
+                // Update the active stroke info
+                if (pointsToAdd.Count > 0)
+                {
+                    var lastPoint = pointsToAdd[pointsToAdd.Count - 1];
+                    _activeStrokeInfo[userId] = new ActiveStrokeInfo(lastPoint, strokeColor, strokeWidth) 
+                    { 
+                        LastUpdate = now 
+                    };
+                }
+                
+                resultStrokes.Add(connectedStroke);
+            }
+            
+            Log.Info("Processed batch with {0} points from {1} users, produced {2} strokes", 
+                batch.Count, pointsByUser.Count, resultStrokes.Count);
+                
+            return resultStrokes;
+        }
+        
+        private static double CalculateDistance(Point p1, Point p2)
+        {
+            return Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
+        }
+    }
+}
+
+/// <summary>
+/// Extension methods for working with StrokeContinuityStage
+/// </summary>
+public static class StrokeContinuityStageExtensions
+{
+    /// <summary>
+    /// Adds stroke continuity tracking to a stream of batched point data
+    /// </summary>
+    public static Source<IEnumerable<ConnectedStroke>, TMat> WithStrokeContinuity<TMat>(
+        this Source<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>, TMat> source,
+        TimeSpan? inactivityTimeout = null)
+    {
+        return source.Via(new StrokeContinuityStage(inactivityTimeout));
+    }
+    
+    /// <summary>
+    /// Creates a connected stroke processing flow with both GroupedWithin and stroke continuity tracking
+    /// </summary>
+    public static Source<IDrawingSessionCommand, TMat> ToConnectedStrokes<TMat>(
+        this Source<LocalPaintProtocol.AddPointToConnectedStroke, TMat> source,
+        DrawingSessionId drawingSessionId,
+        int batchSize = 10,
+        TimeSpan? batchWindow = null,
+        TimeSpan? inactivityTimeout = null)
+    {
+        var window = batchWindow ?? TimeSpan.FromMilliseconds(75);
+        var timeout = inactivityTimeout ?? TimeSpan.FromMilliseconds(Math.Max(window.TotalMilliseconds * 3, 250));
+        
+        return source
+            .GroupedWithin(batchSize, window)
+            .Select(items => items.ToImmutableList())
+            .Via(new StrokeContinuityStage(timeout))
+            .SelectMany(strokes => strokes)
+            .Select(IDrawingSessionCommand (c) => new DrawingSessionCommands.AddStroke(drawingSessionId, c));
+    }
+} 

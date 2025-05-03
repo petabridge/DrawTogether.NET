@@ -171,7 +171,7 @@ namespace DrawTogether.Tests
                 
                 if (currentStroke.Points.Count > 0 && nextStroke.Points.Count > 0)
                 {
-                    var lastPointInCurrent = currentStroke.Points[currentStroke.Points.Count - 1];
+                    var lastPointInCurrent = currentStroke.Points[^1];
                     var firstPointInNext = nextStroke.Points[0];
                     
                     double distance = CalculateDistance(lastPointInCurrent, firstPointInNext);
@@ -280,6 +280,123 @@ namespace DrawTogether.Tests
             Assert.Equal(points.Last().Y, stroke.Points.Last().Y);
             
             _output.WriteLine("All points correctly included in a single stroke with no gaps");
+        }
+
+        [Fact]
+        public async Task Should_Maintain_Stroke_Continuity_Across_Batches()
+        {
+            // Arrange
+            var userId = new UserId("test-user");
+            var drawingSessionId = new DrawingSessionId("test-session");
+            var color = new Color("#FF0000");  // Red
+            var strokeWidth = new GreaterThanZeroInteger(5);
+
+            // Simulate points from a horizontal line drawn across the screen
+            var points = new List<Point>();
+            var random = new Random(123); // Fixed seed for reproducibility
+            
+            // Create points with realistic spacing
+            double currentX = 0;
+            double currentY = 400;
+            
+            // Generate 100 points with realistic spacing (1-3px between points)
+            for (var i = 0; i < 100; i++)
+            {
+                currentX += 1 + random.NextDouble() * 2;
+                currentY += random.NextDouble() * 2 - 1;
+                points.Add(new Point(currentX, currentY));
+            }
+
+            _output.WriteLine($"Generated {points.Count} points with realistic spacing");
+            
+            // Create multiple batches to simulate Akka.Streams GroupedWithin
+            var batches = new List<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>>();
+            int currentIndex = 0;
+            int batchSize = 10; // Fixed batch size for predictability
+            
+            while (currentIndex < points.Count)
+            {
+                var batch = new List<LocalPaintProtocol.AddPointToConnectedStroke>();
+                
+                for (int i = 0; i < batchSize && currentIndex < points.Count; i++)
+                {
+                    batch.Add(new LocalPaintProtocol.AddPointToConnectedStroke(
+                        points[currentIndex],
+                        drawingSessionId,
+                        userId,
+                        strokeWidth,
+                        color));
+                    currentIndex++;
+                }
+                
+                batches.Add(batch.ToImmutableList());
+            }
+            
+            _output.WriteLine($"Created {batches.Count} batches from {points.Count} points");
+            
+            // Create a source from the batches
+            var materializer = Sys.Materializer();
+            var source = Source.From(batches);
+            
+            // Use the StrokeContinuityStage directly
+            var strokeContinuityStage = new StrokeContinuityStage(TimeSpan.FromMilliseconds(1000));
+            var sink = Sink.Seq<ConnectedStroke>();
+            
+            var resultStrokes = await source
+                .Via(strokeContinuityStage)
+                .SelectMany(strokes => strokes)
+                .RunWith(sink, materializer);
+            
+            // Assert
+            _output.WriteLine($"Number of strokes created with continuity stage: {resultStrokes.Count}");
+            
+            // Analyze the gaps between strokes
+            AnalyzeStrokes(resultStrokes.ToImmutableList(), points);
+            
+            // Verify that strokes are continuous (no significant gaps)
+            if (resultStrokes.Count > 1)
+            {
+                var gaps = new List<double>();
+                
+                for (int i = 0; i < resultStrokes.Count - 1; i++)
+                {
+                    var currentStroke = resultStrokes[i];
+                    var nextStroke = resultStrokes[i + 1];
+                    
+                    if (currentStroke.Points.Count > 0 && nextStroke.Points.Count > 0)
+                    {
+                        var lastPointInCurrent = currentStroke.Points[currentStroke.Points.Count - 1];
+                        var firstPointInNext = nextStroke.Points[0];
+                        
+                        double distance = CalculateDistance(lastPointInCurrent, firstPointInNext);
+                        gaps.Add(distance);
+                    }
+                }
+                
+                if (gaps.Count > 0)
+                {
+                    _output.WriteLine($"Found {gaps.Count} gaps between consecutive strokes");
+                    _output.WriteLine($"Min gap: {gaps.Min():F2} pixels");
+                    _output.WriteLine($"Max gap: {gaps.Max():F2} pixels");
+                    _output.WriteLine($"Average gap: {gaps.Average():F2} pixels");
+                    
+                    // Check that all gaps are very small (less than 3 pixels)
+                    // This is the key assertion - we want to ensure the strokes connect visually
+                    Assert.True(gaps.Max() < 3.0, 
+                        $"Gaps between strokes should be minimal (< 3px) but found max gap of {gaps.Max():F2}px");
+                }
+                else
+                {
+                    _output.WriteLine("No measurable gaps between strokes (perfect continuity)");
+                }
+            }
+            
+            // Count total points across all strokes
+            int totalPoints = resultStrokes.Sum(s => s.Points.Count);
+            _output.WriteLine($"Total points in all strokes: {totalPoints} (original: {points.Count})");
+            Assert.Equal(points.Count, totalPoints);
+            
+            _output.WriteLine("StrokeContinuityStage maintained visual continuity across batches");
         }
     }
 } 

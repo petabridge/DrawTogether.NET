@@ -219,9 +219,14 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
 
         _debouncer = sourceRef;
 
-        var strokeSource = CreateStrokeSource(source, _log, _drawingSessionId);
-        
-        strokeSource.SelectAsync(10, async c =>
+        // Use the StrokeContinuityStage extension method for cleaner implementation
+        source.ToConnectedStrokes(
+                _drawingSessionId,
+                batchSize: 10,
+                batchWindow: TimeSpan.FromMilliseconds(75),
+                inactivityTimeout: TimeSpan.FromMilliseconds(250)
+            )
+            .SelectAsync(10, async c =>
             {
                 try
                 {
