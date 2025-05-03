@@ -15,6 +15,11 @@ using static DrawTogether.Actors.Local.LocalPaintProtocol;
 
 namespace DrawTogether.Actors.Local;
 
+public static class StrokeBatcher
+{
+    
+}
+
 /// <summary>
 /// A local handle for a specific drawing instance
 /// </summary>
@@ -203,34 +208,30 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
     private readonly int _randomSeed = Random.Shared.Next();
     private int _strokeIdCounter = 0;
 
-    private int NextStrokeId(UserId userId)
+    private StrokeId NextStrokeId(UserId userId)
     {
-        return MurmurHash.StringHash(userId.IdentityName) + _randomSeed + _strokeIdCounter++;
+        return new StrokeId(MurmurHash.StringHash(userId.IdentityName) + _randomSeed + _strokeIdCounter++);
     }
     
-    private List<IDrawingSessionCommand> TransmitActions(IReadOnlyList<AddPointToConnectedStroke> actions)
+    private static IEnumerable<ConnectedStroke> ComputeStrokes(IReadOnlyList<AddPointToConnectedStroke> actions, 
+        ILoggingAdapter log,
+        Func<UserId, StrokeId> strokeIdGenerator)
     {
         // group all the actions by user
-        var userActions = actions.GroupBy(a => a.UserId).ToList();
-
-        _log.Info("BATCHED {0} create actions from {1} users", actions.Count, userActions.Count);
-
-        var drawSessionCommands = new List<IDrawingSessionCommand>();
+        var userActions = actions.GroupBy(a => a.UserId);
 
         foreach (var userStuff in userActions)
         {
             var userId = userStuff.Key;
-            var connectedStroke = new ConnectedStroke(new StrokeId(NextStrokeId(userId)))
+            var connectedStroke = new ConnectedStroke(strokeIdGenerator(userId))
             {
                 Points = userStuff.Select(a => a.Point).ToList(),
                 StrokeColor = userStuff.First().StrokeColor,
                 StrokeWidth = userStuff.First().StrokeWidth
             };
-            
-            drawSessionCommands.Add(new DrawingSessionCommands.AddStroke(_drawingSessionId, connectedStroke));
-        }
 
-        return drawSessionCommands;
+            yield return connectedStroke;
+        }
     }
     
     private void PublishEvent(IDrawingSessionEvent drawingEvent)
@@ -251,9 +252,10 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
 
         _debouncer = sourceRef;
         source.GroupedWithin(10, TimeSpan.FromMilliseconds(75))
-            .Select(c => TransmitActions(c.ToList()))
+            .Select(c => ComputeStrokes(c.ToList(), _log, NextStrokeId))
             .SelectMany(c => c)
-            .SelectAsync(1, async c =>
+            .Select(c =>  new DrawingSessionCommands.AddStroke(_drawingSessionId, c))
+            .SelectAsync(10, async c =>
             {
                 try
                 {
