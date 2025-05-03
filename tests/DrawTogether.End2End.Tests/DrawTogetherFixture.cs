@@ -1,5 +1,11 @@
 ﻿using Aspire.Hosting;
 using Aspire.Hosting.Testing;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace DrawTogether.End2End.Tests;
 
@@ -15,6 +21,9 @@ public class DrawTogetherFixture : IAsyncLifetime
         _app = await builder.BuildAsync();
         
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+        await _app.StartAsync(cts.Token);
+        
+        // Wait for the DrawTogether web app to be ready
         await _app.ResourceNotifications.WaitForResourceHealthyAsync("DrawTogether", cts.Token);
     }
 
@@ -25,4 +34,26 @@ public class DrawTogetherFixture : IAsyncLifetime
             await _app.DisposeAsync();
         }
     }
+    
+    // Get the endpoint for the DrawTogether web app
+    public Uri GetDrawTogetherEndpoint()
+    {
+        if (_app == null)
+            throw new InvalidOperationException("Application not initialized");
+            
+        // Get the endpoint URL using Aspire API
+        var endpoint = _app.GetEndpoint("DrawTogether");
+        if (endpoint == null)
+            throw new InvalidOperationException("Endpoint not found for DrawTogether resource");
+            
+        return endpoint;
+    }
+}
+
+// Define a collection fixture for sharing the DrawTogetherFixture
+[CollectionDefinition("DrawTogether")]
+public class DrawTogetherCollection : ICollectionFixture<DrawTogetherFixture>
+{
+    // This class has no code, and is never created. Its purpose is to be 
+    // the place to apply [CollectionDefinition] and all the ICollectionFixture<> interfaces.
 }
