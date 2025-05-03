@@ -39,13 +39,24 @@ namespace DrawTogether.Tests
             var points = new List<Point>();
             var random = new Random(123); // Fixed seed for reproducibility
             
-            // Create 100 points in roughly a horizontal line with small variations
+            // Create points with more realistic spacing to simulate actual mouse movement
+            // A typical mouse movement would have points much closer together than 10px
+            double currentX = 0;
+            double currentY = 400;
+            
+            // Generate 100 points with more realistic spacing (1-3px between points)
             for (var i = 0; i < 100; i++)
             {
-                double x = i * 10; // Points are 10 pixels apart horizontally
-                double y = 400 + random.NextDouble() * 10 - 5; // Small vertical variations
-                points.Add(new Point(x, y));
+                // Small random movement in x direction (1-3 pixels)
+                currentX += 1 + random.NextDouble() * 2;
+                
+                // Small random movement in y direction (-1 to +1 pixel)
+                currentY += random.NextDouble() * 2 - 1;
+                
+                points.Add(new Point(currentX, currentY));
             }
+
+            _output.WriteLine($"Generated 100 points with realistic spacing - total distance: {CalculateDistance(points.First(), points.Last()):F2} pixels");
 
             // Create point batches to simulate Akka.Streams GroupedWithin behavior
             // This is the key part - we'll create batches of random sizes to simulate
