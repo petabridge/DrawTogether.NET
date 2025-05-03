@@ -38,7 +38,7 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
     protected override GraphStageLogic CreateLogic(Attributes inheritedAttributes) => new Logic(this);
 
     // Inner logic class that implements the stage behavior
-    private class Logic : GraphStageLogic
+    private class Logic : TimerGraphStageLogic
     {
         private readonly StrokeContinuityStage _stage;
         
@@ -127,14 +127,14 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
 
                 var (pointsToAdd, disconnect, strokeWidth, strokeColor) = ProcessEvents(userPoints);
 
+                if (disconnect) // have to purge old records, if they exist
+                {
+                    _activeStrokeInfo.Remove(userId);
+                }
+                
                 // If no points to add, then we can exit early for this user
                 if (pointsToAdd.Count == 0)
                 {
-                    if (disconnect) // have to purge old records, if they exist
-                    {
-                        _activeStrokeInfo.Remove(userId);
-                    }
-
                     continue; // No points to add, so skip to next user
                 }
                 
@@ -149,13 +149,15 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
                         !activeInfo.StrokeColor.Equals(strokeColor) || 
                         activeInfo.StrokeWidth.Value != strokeWidth.Value;
                     
-                    if (!disconnect && !strokePropertiesChanged)
+                    // if the properties have changed, we need to disconnect from the previous stroke
+                    // we might have missed a previous StopStroke event
+                    if (!strokePropertiesChanged)
                     {
                         // If the first point of this batch isn't close to the last point of the previous batch,
                         // something unusual happened (e.g., user clicked somewhere else) - no need for continuity
                         var distance = CalculateDistance(activeInfo.LastPoint, pointsToAdd[0]);
                         
-                        if (distance <= 5.0) // Threshold for what we consider "continuous"
+                        if (distance <= 500.0) // Threshold for what we consider "continuous"
                         {
                             // For perfect continuity, replace the first point with the last point from previous stroke
                             // This ensures there's not even a sub-pixel gap between strokes
@@ -224,6 +226,11 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
         private static double CalculateDistance(Point p1, Point p2)
         {
             return Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
+        }
+
+        protected override void OnTimer(object timerKey)
+        {
+            
         }
     }
 }
