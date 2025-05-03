@@ -128,7 +128,7 @@ public class StrokeContinuityStage : GraphStage<
 
                 if (disconnect) // have to purge old records, if they exist
                 {
-                    Log.Info("Disconnecting from previous stroke for user {0}", userId.IdentityName);
+                    Log.Debug("Disconnecting from previous stroke for user {0}", userId.IdentityName);
                     _activeStrokeInfo.Remove(userId);
                 }
 
@@ -171,7 +171,7 @@ public class StrokeContinuityStage : GraphStage<
                         }
                         else
                         {
-                            Log.Info("Gap detected for user {0} ({1:F2}px) - likely new stroke intended",
+                            Log.Debug("Gap detected for user {0} ({1:F2}px) - likely new stroke intended",
                                 userId.IdentityName, distance);
                         }
                     }

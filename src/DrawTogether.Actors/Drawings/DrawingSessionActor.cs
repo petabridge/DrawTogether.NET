@@ -127,7 +127,7 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
                 Sender.Tell(State);
                 break;
             }
-            case ReceiveTimeout _:
+            case ReceiveTimeout:
             {
                 _log.Info("Drawing session {DrawingSessionId} has been idle for too long, closing session");
 
