@@ -45,8 +45,20 @@ jobs:
         run: |
           ./build.ps1
 
-      - name: "build docker images"
-        run: ./build-docker.sh
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+
+      - name: "dotnet docker"
+        run: dotnet publish -c Release /t:PublishContainer
+
 
   test:
     # Permissions this GitHub Action needs for other things in GitHub
@@ -76,9 +88,6 @@ jobs:
 
       - name: "dotnet build"
         run: dotnet build -c Release
-
-      - name: "dotnet pack"
-        run: dotnet pack -c Release
 
       - name: "dotnet test"
         run: dotnet test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"

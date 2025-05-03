@@ -7,6 +7,12 @@ updates:
     interval: daily
     time: "11:00"
 
+- package-ecosystem: "dotnet-sdk"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    day: "wednesday"
+
 - package-ecosystem: nuget
   directory: "/"
   schedule:
