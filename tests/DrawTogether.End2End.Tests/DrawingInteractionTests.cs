@@ -65,6 +65,8 @@ public class DrawingInteractionTests : IAsyncLifetime
         // Handle authentication if needed - example for form-based auth
         await HandleAuthentication(page, endpoint);
         
+        _output.WriteLine("Attempting to spawn a new drawing");
+        
         // next, we need to create a new drawing
         await page.GotoAsync(new Uri(endpoint, "/NewDrawing").ToString());
         
@@ -122,20 +124,29 @@ public class DrawingInteractionTests : IAsyncLifetime
         _output.WriteLine("Handling authentication");
         var authUrl = new Uri(baseUri, "/Account/Register");
         await page.GotoAsync(authUrl.ToString());
+        _output.WriteLine($"Navigated to {authUrl}");
+
+        var pageFillOptions = new PageFillOptions() { Timeout = 1000 };
         
         // 1) Email input
-        await page.FillAsync("input[name=\"Input.Email\"]", "testuser@drawtogether.io");
+        await page.FillAsync("input[name=\"Input.Email\"]", "testuser@drawtogether.io", pageFillOptions);
         
         // 2) Password input
-        await page.FillAsync("input[name=\"Input.Password\"]", "DrawTogether123!");
+        await page.FillAsync("input[name=\"Input.Password\"]", "DrawTogether123!", pageFillOptions);
         
         // 3) Confirm password input
-        await page.FillAsync("input[name=\"Input.ConfirmPassword\"]", "DrawTogether123!");
+        await page.FillAsync("input[name=\"Input.ConfirmPassword\"]", "DrawTogether123!", pageFillOptions);
+        
+        _output.WriteLine("Filled out registration form");
         
         // 4) Submit button
         await page.ClickAsync("button[type=\"submit\"]");
         
+        _output.WriteLine("Submitted form");
+        
         // Wait for navigation to complete - using await page.WaitForURLAsync() instead of WaitForNavigationAsync
         await page.WaitForURLAsync(baseUri.ToString());
+        
+        _output.WriteLine("Authenticated successfully");
     }
 } 
