@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
+    <PropertyGroup>
+        <IsPublishable>false</IsPublishable >
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
         <PackageReference Include="Microsoft.Extensions.Hosting"/>
@@ -8,17 +12,4 @@
     <ItemGroup>
       <ProjectReference Include="..\DrawTogether\DrawTogether.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-        <Content Include="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </Content>
-        <Content Include="appsettings.Development.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </Content>
-</ItemGroup>
 </Project>
