@@ -145,6 +145,7 @@ public class DrawingInteractionTests : IAsyncLifetime
         _output.WriteLine("Submitted form");
         
         // Wait for navigation to complete - using await page.WaitForURLAsync() instead of WaitForNavigationAsync
+        _output.WriteLine("Expecting redirect back to " + baseUri);
         await page.WaitForURLAsync(baseUri.ToString());
         
         _output.WriteLine("Authenticated successfully");
