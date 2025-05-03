@@ -33,6 +33,9 @@ public static class LocalPaintProtocol
         public DrawingSessionId DrawingSessionId { get; } = drawingSessionId;
     }
 
+    /// <summary>
+    /// Sent when a point is added to a continuous stroke (mouse/touch movement)
+    /// </summary>
     public sealed class AddPointToConnectedStroke(
         Point point,
         DrawingSessionId drawingSessionId,
@@ -47,5 +50,17 @@ public static class LocalPaintProtocol
         public GreaterThanZeroInteger StrokeWidth { get; } = strokeWidth;
     
         public Color StrokeColor { get; } = strokeColor;
+    }
+    
+    /// <summary>
+    /// Sent when the user releases the mouse/touch, indicating the current stroke is complete
+    /// </summary>
+    public sealed class StrokeCompleted(
+        DrawingSessionId drawingSessionId,
+        UserId userId)
+        : IPaintSessionMessage
+    {
+        public DrawingSessionId DrawingSessionId { get; } = drawingSessionId;
+        public UserId UserId { get; } = userId;
     }
 }

@@ -67,26 +67,20 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
                     return;
                 }
 
-                var hasReplied = false;
-
                 if (State.IsEmpty)
                 {
                     // special case: state is empty, need to speed up activity publishing
                     Self.Tell(PublishActivity.Instance);
                 }
+   
+                // ack right away
+                Sender.Tell(resp);
 
-                PersistAll(events, evt =>
+                PersistAllAsync(events, evt =>
                 {
-                    if (!hasReplied)
-                    {
-                        Sender.Tell(resp);
-                        hasReplied = true;
-                    }
-
                     PublishToSubscribers(evt);
                     State = State.Apply(evt);
-
-
+                    
                     if (LastSequenceNr % 100 == 0)
                     {
                         SaveSnapshot(State);
@@ -133,7 +127,7 @@ public sealed class DrawingSessionActor : UntypedPersistentActor, IWithTimers
                 Sender.Tell(State);
                 break;
             }
-            case ReceiveTimeout _:
+            case ReceiveTimeout:
             {
                 _log.Info("Drawing session {DrawingSessionId} has been idle for too long, closing session");
 

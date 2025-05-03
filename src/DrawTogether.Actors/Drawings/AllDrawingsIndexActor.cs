@@ -48,7 +48,7 @@ public sealed class AllDrawingsIndexActor : UntypedActor, IWithTimers
                 _recentDrawingStateUpdates = _recentDrawingStateUpdates.Merge(data);
                 _lastUpdate = DateTime.UtcNow;
                 
-                // speed up publshing the first time we get data
+                // speed up publishing the first time we get data
                 Self.Tell(PublishAllUpdates.Instance);
                 break;
             }
