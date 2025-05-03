@@ -10,11 +10,13 @@ namespace DrawTogether.Actors.Local;
 public static class StrokeBuilder
 {
     public static IEnumerable<ConnectedStroke> ComputeStrokes(IReadOnlyList<LocalPaintProtocol.AddPointToConnectedStroke> actions, 
-        ILoggingAdapter log,
+        ILoggingAdapter? log,
         Func<UserId, StrokeId> strokeIdGenerator)
     {
         // group all the actions by user
-        var userActions = actions.GroupBy(a => a.UserId);
+        var userActions = actions.GroupBy(a => a.UserId).ToList();
+        
+        log?.Info("BATCHED {0} create actions from {1} users", actions.Count, userActions.Count);
 
         foreach (var userStuff in userActions)
         {
