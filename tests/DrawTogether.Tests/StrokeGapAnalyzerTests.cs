@@ -9,6 +9,7 @@ using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -39,7 +40,7 @@ namespace DrawTogether.Tests
             var random = new Random(123); // Fixed seed for reproducibility
             
             // Create 100 points in roughly a horizontal line with small variations
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 double x = i * 10; // Points are 10 pixels apart horizontally
                 double y = 400 + random.NextDouble() * 10 - 5; // Small vertical variations
@@ -91,7 +92,7 @@ namespace DrawTogether.Tests
             _output.WriteLine($"Produced {strokes.Count} stroke objects");
             
             // Analyze gaps between strokes
-            AnalyzeStrokes(strokes, points);
+            AnalyzeStrokes(strokes.ToImmutableList(), points);
             
             // Try various GroupedWithin parameters and analyze the results using the production code
             await TestStreamProcessingWithProductionCode(points, userId, drawingSessionId, strokeWidth, color, 5, 30);
@@ -131,18 +132,19 @@ namespace DrawTogether.Tests
                 groupSize);
                 
             // Collect the results
-            var resultStrokes = new List<ConnectedStroke>();
+            var sink = Sink.Seq<ConnectedStroke>();
             
-            await strokeCommandSource
+            var resultStrokes = await strokeCommandSource
                 .Select(cmd => (cmd as DrawingSessionCommands.AddStroke)?.Stroke)
                 .Where(stroke => stroke != null)
-                .RunForeach(stroke => resultStrokes.Add(stroke), materializer);
+                .Select(c => c!)
+                .RunWith(sink, materializer);
             
             _output.WriteLine($"Produced {resultStrokes.Count} stroke objects with GroupedWithin({groupSize}, {groupTimeMs}ms)");
             AnalyzeStrokes(resultStrokes, points);
         }
         
-        private void AnalyzeStrokes(List<ConnectedStroke> strokes, List<Point> originalPoints)
+        private void AnalyzeStrokes(IImmutableList<ConnectedStroke> strokes, List<Point> originalPoints)
         {
             if (strokes.Count == 0)
             {
@@ -214,7 +216,7 @@ namespace DrawTogether.Tests
             }
         }
         
-        private double CalculateDistance(Point p1, Point p2)
+        private static double CalculateDistance(Point p1, Point p2)
         {
             return Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
         }
