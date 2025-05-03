@@ -57,6 +57,7 @@
     [Parameter] public required EventCallback<Point> OnPointAdded { get; set; }
     [Parameter] public EventCallback OnClearRequested { get; set; }
     [Parameter] public EventCallback<(double, double)> OnRawCoordinatesChanged { get; set; }
+    [Parameter] public EventCallback OnStrokeCompleted { get; set; }
     [Parameter] public bool ShowGrid { get; set; } = false;
     
     [Parameter] public string DrawingContainerId { get; set; } = "drawing-surface";
@@ -145,10 +146,10 @@
 
     private async Task OnMouseUp(MouseEventArgs e)
     {
-        if (e.Buttons == 1)
+        if (e.Buttons == 0) // Button was released (previously down)
         {
-            var transformedPoint = await TransformCoordinates(e.ClientX, e.ClientY);
-            await OnPointAdded.InvokeAsync(transformedPoint);
+            // Notify that the stroke is completed
+            await OnStrokeCompleted.InvokeAsync();
         }
     }
 
@@ -192,9 +193,10 @@
         }
     }
 
-    private void OnTouchEnd(TouchEventArgs e)
+    private async Task OnTouchEnd(TouchEventArgs e)
     {
-        // No additional actions needed for touch end
+        // Notify that the stroke is completed when touch ends
+        await OnStrokeCompleted.InvokeAsync();
     }
     
     [JSInvokable]

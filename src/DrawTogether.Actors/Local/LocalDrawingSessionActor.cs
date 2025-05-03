@@ -12,6 +12,7 @@ using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
 using static DrawTogether.Actors.Local.LocalPaintProtocol;
+using static DrawTogether.Actors.Local.StrokeBuilder;
 
 namespace DrawTogether.Actors.Local;
 
@@ -116,6 +117,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         switch (message)
         {
             case AddPointToConnectedStroke:
+            case StrokeCompleted:
                 _debouncer.Tell(message);
                 break;
             case JoinPaintSession paintMessage:
@@ -200,39 +202,6 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         }
     }
     
-    private readonly int _randomSeed = Random.Shared.Next();
-    private int _strokeIdCounter = 0;
-
-    private int NextStrokeId(UserId userId)
-    {
-        return MurmurHash.StringHash(userId.IdentityName) + _randomSeed + _strokeIdCounter++;
-    }
-    
-    private List<IDrawingSessionCommand> TransmitActions(IReadOnlyList<AddPointToConnectedStroke> actions)
-    {
-        // group all the actions by user
-        var userActions = actions.GroupBy(a => a.UserId).ToList();
-
-        _log.Info("BATCHED {0} create actions from {1} users", actions.Count, userActions.Count);
-
-        var drawSessionCommands = new List<IDrawingSessionCommand>();
-
-        foreach (var userStuff in userActions)
-        {
-            var userId = userStuff.Key;
-            var connectedStroke = new ConnectedStroke(new StrokeId(NextStrokeId(userId)))
-            {
-                Points = userStuff.Select(a => a.Point).ToList(),
-                StrokeColor = userStuff.First().StrokeColor,
-                StrokeWidth = userStuff.First().StrokeWidth
-            };
-            
-            drawSessionCommands.Add(new DrawingSessionCommands.AddStroke(_drawingSessionId, connectedStroke));
-        }
-
-        return drawSessionCommands;
-    }
-    
     private void PublishEvent(IDrawingSessionEvent drawingEvent)
     {
         foreach(var client in _clientSessions)
@@ -246,14 +215,19 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         AttemptToSubscribe();
 
         Context.SetReceiveTimeout(TimeSpan.FromMinutes(20));
-        var (sourceRef, source) = Source.ActorRef<AddPointToConnectedStroke>(1000, OverflowStrategy.DropHead)
+        
+        // Use the more generic IPaintSessionMessage type to handle both point and completion events
+        var (sourceRef, source) = Source.ActorRef<IPaintSessionMessage>(1000, OverflowStrategy.DropHead)
             .PreMaterialize(_materializer);
 
         _debouncer = sourceRef;
-        source.GroupedWithin(10, TimeSpan.FromMilliseconds(75))
-            .Select(c => TransmitActions(c.ToList()))
-            .SelectMany(c => c)
-            .SelectAsync(1, async c =>
+
+        // Use the enhanced ToConnectedStrokes method
+        source.ToConnectedStrokes(
+                _drawingSessionId,
+                inactivityTimeout: TimeSpan.FromSeconds(30) // 30 seconds timeout as suggested
+            )
+            .SelectAsync(10, async c =>
             {
                 try
                 {

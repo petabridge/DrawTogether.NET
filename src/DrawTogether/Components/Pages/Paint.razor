@@ -81,6 +81,7 @@
                 CurrentColor="Color"
                 CursorSize="_cursorSize"
                 OnPointAdded="OnPointAdded"
+                OnStrokeCompleted="OnStrokeCompleted"
                 OnClearRequested="ResetScreen" />
         </MudPaper>
     </div>
@@ -208,6 +209,12 @@
     {
         _localActorHandle?.Tell(new LocalPaintProtocol
             .AddPointToConnectedStroke(point, DrawingSessionId!, _currentUserId!, _cursorSize, Color));
+    }
+
+    private void OnStrokeCompleted()
+    {
+        _localActorHandle?.Tell(new LocalPaintProtocol
+            .StrokeCompleted(DrawingSessionId!, _currentUserId!));
     }
 
     private void UpdateCursorSize(int cursorSize)
