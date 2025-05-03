@@ -93,14 +93,14 @@ namespace DrawTogether.Tests
             // Analyze gaps between strokes
             AnalyzeStrokes(strokes, points);
             
-            // Try various GroupedWithin parameters and analyze the results
-            await TestStreamProcessing(points, userId, drawingSessionId, strokeWidth, color, 5, 30);
-            await TestStreamProcessing(points, userId, drawingSessionId, strokeWidth, color, 10, 75);
-            await TestStreamProcessing(points, userId, drawingSessionId, strokeWidth, color, 15, 100);
-            await TestStreamProcessing(points, userId, drawingSessionId, strokeWidth, color, 20, 150);
+            // Try various GroupedWithin parameters and analyze the results using the production code
+            await TestStreamProcessingWithProductionCode(points, userId, drawingSessionId, strokeWidth, color, 5, 30);
+            await TestStreamProcessingWithProductionCode(points, userId, drawingSessionId, strokeWidth, color, 10, 75);
+            await TestStreamProcessingWithProductionCode(points, userId, drawingSessionId, strokeWidth, color, 15, 100);
+            await TestStreamProcessingWithProductionCode(points, userId, drawingSessionId, strokeWidth, color, 20, 150);
         }
         
-        private async Task TestStreamProcessing(
+        private async Task TestStreamProcessingWithProductionCode(
             List<Point> points,
             UserId userId,
             DrawingSessionId drawingSessionId,
@@ -109,7 +109,7 @@ namespace DrawTogether.Tests
             int groupSize,
             int groupTimeMs)
         {
-            _output.WriteLine($"\nTesting with GroupedWithin({groupSize}, {groupTimeMs}ms)");
+            _output.WriteLine($"\nTesting with GroupedWithin({groupSize}, {groupTimeMs}ms) using production code");
             
             // Create source points
             var sourcePoints = points.Select(p => 
@@ -119,17 +119,23 @@ namespace DrawTogether.Tests
             // Create a materializer
             var materializer = Sys.Materializer();
             
-            // Setup stream with specified parameters
-            var strokeIdCounter = 0;
+            // Create the input source
+            var inputSource = Source.From(sourcePoints);
+            
+            // Use the production StrokeBuilder.CreateStrokeSource method
+            var strokeCommandSource = StrokeBuilder.CreateStrokeSource(
+                inputSource, 
+                null, // No logger needed
+                drawingSessionId,
+                TimeSpan.FromMilliseconds(groupTimeMs),
+                groupSize);
+                
+            // Collect the results
             var resultStrokes = new List<ConnectedStroke>();
             
-            await Source.From(sourcePoints)
-                .GroupedWithin(groupSize, TimeSpan.FromMilliseconds(groupTimeMs))
-                .Select(batch => StrokeBuilder.ComputeStrokes(
-                    batch.ToList(),
-                    null,
-                    _ => new StrokeId(strokeIdCounter++)))
-                .SelectMany(s => s)
+            await strokeCommandSource
+                .Select(cmd => (cmd as DrawingSessionCommands.AddStroke)?.Stroke)
+                .Where(stroke => stroke != null)
                 .RunForeach(stroke => resultStrokes.Add(stroke), materializer);
             
             _output.WriteLine($"Produced {resultStrokes.Count} stroke objects with GroupedWithin({groupSize}, {groupTimeMs}ms)");
