@@ -1,18 +1,12 @@
 using Akka.Streams;
 using Akka.Streams.Dsl;
 using Akka.TestKit.Xunit2;
-using Akka.Util;
 using DrawTogether.Actors.Local;
 using DrawTogether.Entities;
 using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Threading.Tasks;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace DrawTogether.Tests
@@ -230,6 +224,62 @@ namespace DrawTogether.Tests
         private static double CalculateDistance(Point p1, Point p2)
         {
             return Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
+        }
+
+        [Fact]
+        public void Should_Create_Single_Stroke_With_Single_Batch()
+        {
+            // Arrange
+            var userId = new UserId("test-user");
+            var drawingSessionId = new DrawingSessionId("test-session");
+            var color = new Color("#FF0000");  // Red
+            var strokeWidth = new GreaterThanZeroInteger(5);
+
+            // Simulate points from a horizontal line drawn across the screen
+            var points = new List<Point>();
+            var random = new Random(123); // Fixed seed for reproducibility
+            
+            // Create points with realistic spacing
+            double currentX = 0;
+            double currentY = 400;
+            
+            // Generate 100 points with realistic spacing (1-3px between points)
+            for (var i = 0; i < 100; i++)
+            {
+                currentX += 1 + random.NextDouble() * 2;
+                currentY += random.NextDouble() * 2 - 1;
+                points.Add(new Point(currentX, currentY));
+            }
+
+            _output.WriteLine($"Generated {points.Count} points with realistic spacing");
+            
+            // Create a single batch with all points
+            var allPointsBatch = points.Select(p => 
+                new LocalPaintProtocol.AddPointToConnectedStroke(
+                    p, drawingSessionId, userId, strokeWidth, color)).ToList();
+            
+            // Process with original StrokeBuilder logic (no batching)
+            int strokeIdCounter = 0;
+            var strokes = StrokeBuilder.ComputeStrokes(
+                allPointsBatch,
+                null, // No logger needed
+                _ => new StrokeId(strokeIdCounter++)).ToList();
+            
+            // Assert
+            _output.WriteLine($"Number of strokes created: {strokes.Count}");
+            Assert.Single(strokes); // Should be exactly one stroke
+            
+            var stroke = strokes[0];
+            _output.WriteLine($"Stroke points: {stroke.Points.Count} (original: {points.Count})");
+            Assert.Equal(points.Count, stroke.Points.Count);
+            
+            // Verify the first and last points match
+            Assert.Equal(points.First().X, stroke.Points.First().X);
+            Assert.Equal(points.First().Y, stroke.Points.First().Y);
+            Assert.Equal(points.Last().X, stroke.Points.Last().X);
+            Assert.Equal(points.Last().Y, stroke.Points.Last().Y);
+            
+            _output.WriteLine("All points correctly included in a single stroke with no gaps");
         }
     }
 } 
