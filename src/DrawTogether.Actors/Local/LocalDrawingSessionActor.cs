@@ -201,14 +201,6 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         }
     }
     
-    private readonly int _randomSeed = Random.Shared.Next();
-    private int _strokeIdCounter = 0;
-
-    private StrokeId NextStrokeId(UserId userId)
-    {
-        return new StrokeId(MurmurHash.StringHash(userId.IdentityName) + _randomSeed + _strokeIdCounter++);
-    }
-    
     private void PublishEvent(IDrawingSessionEvent drawingEvent)
     {
         foreach(var client in _clientSessions)
@@ -226,11 +218,10 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
             .PreMaterialize(_materializer);
 
         _debouncer = sourceRef;
-        source.GroupedWithin(10, TimeSpan.FromMilliseconds(75))
-            .Select(c => ComputeStrokes(c.ToList(), _log, NextStrokeId))
-            .SelectMany(c => c)
-            .Select(c =>  new DrawingSessionCommands.AddStroke(_drawingSessionId, c))
-            .SelectAsync(10, async c =>
+
+        var strokeSource = CreateStrokeSource(source, _log, _drawingSessionId);
+        
+        strokeSource.SelectAsync(10, async c =>
             {
                 try
                 {
