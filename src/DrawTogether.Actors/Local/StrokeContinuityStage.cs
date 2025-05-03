@@ -9,6 +9,7 @@ using DrawTogether.Entities.Drawings;
 using DrawTogether.Entities.Drawings.Messages;
 using DrawTogether.Entities.Users;
 using System.Collections.Immutable;
+using static DrawTogether.Actors.Local.StrokeBuilder;
 
 namespace DrawTogether.Actors.Local;
 
@@ -17,20 +18,20 @@ namespace DrawTogether.Actors.Local;
 /// This stage runs downstream from the GroupedWithin operator and ensures that strokes 
 /// from the same continuous drawing action are connected properly without visible gaps.
 /// </summary>
-public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>, IEnumerable<ConnectedStroke>>>
+public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPaintProtocol.IPaintSessionMessage>, IEnumerable<ConnectedStroke>>>
 {
     private readonly TimeSpan _inactivityTimeout;
     
     // Shape definition for this stage
-    public override FlowShape<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>, IEnumerable<ConnectedStroke>> Shape { get; }
+    public override FlowShape<ImmutableList<LocalPaintProtocol.IPaintSessionMessage>, IEnumerable<ConnectedStroke>> Shape { get; }
 
     // Constructor
     public StrokeContinuityStage(TimeSpan? inactivityTimeout = null)
     {
-        _inactivityTimeout = inactivityTimeout ?? TimeSpan.FromMilliseconds(250);
-        var inlet = new Inlet<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>>("StrokeContinuity.in");
+        _inactivityTimeout = inactivityTimeout ?? TimeSpan.FromSeconds(30);
+        var inlet = new Inlet<ImmutableList<LocalPaintProtocol.IPaintSessionMessage>>("StrokeContinuity.in");
         var outlet = new Outlet<IEnumerable<ConnectedStroke>>("StrokeContinuity.out");
-        Shape = new FlowShape<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>, IEnumerable<ConnectedStroke>>(inlet, outlet);
+        Shape = new FlowShape<ImmutableList<LocalPaintProtocol.IPaintSessionMessage>, IEnumerable<ConnectedStroke>>(inlet, outlet);
     }
 
     // Create logic for this stage - must be protected to match base class
@@ -107,10 +108,10 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
         }
         
         // Process a batch of points and maintain stroke continuity
-        private IEnumerable<ConnectedStroke> ProcessBatch(ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke> batch)
+        private IEnumerable<ConnectedStroke> ProcessBatch(ImmutableList<LocalPaintProtocol.IPaintSessionMessage> batch)
         {
             if (batch.Count == 0)
-                return Enumerable.Empty<ConnectedStroke>();
+                return [];
                 
             // Clean up inactive strokes first
             CleanupInactiveStrokes();
@@ -123,9 +124,19 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
             foreach (var userPoints in pointsByUser)
             {
                 var userId = userPoints.Key;
-                var pointsToAdd = userPoints.Select(a => a.Point).ToList();
-                var strokeColor = userPoints.First().StrokeColor;
-                var strokeWidth = userPoints.First().StrokeWidth;
+
+                var (pointsToAdd, disconnect, strokeWidth, strokeColor) = ProcessEvents(userPoints);
+
+                // If no points to add, then we can exit early for this user
+                if (pointsToAdd.Count == 0)
+                {
+                    if (disconnect) // have to purge old records, if they exist
+                    {
+                        _activeStrokeInfo.Remove(userId);
+                    }
+
+                    continue; // No points to add, so skip to next user
+                }
                 
                 // Always generate a new stroke ID for each batch
                 var strokeId = GenerateStrokeId(userId);
@@ -134,20 +145,15 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
                 if (_activeStrokeInfo.TryGetValue(userId, out var activeInfo))
                 {
                     // Check if stroke properties have changed
-                    bool strokePropertiesChanged = 
+                    var strokePropertiesChanged = 
                         !activeInfo.StrokeColor.Equals(strokeColor) || 
                         activeInfo.StrokeWidth.Value != strokeWidth.Value;
                     
-                    if (strokePropertiesChanged)
-                    {
-                        // Properties changed - don't need special handling, just track the new properties
-                        Log.Info("Stroke properties changed for user {0}, creating new stroke", userId.IdentityName);
-                    }
-                    else if (pointsToAdd.Count > 0)
+                    if (!disconnect && !strokePropertiesChanged)
                     {
                         // If the first point of this batch isn't close to the last point of the previous batch,
                         // something unusual happened (e.g., user clicked somewhere else) - no need for continuity
-                        double distance = CalculateDistance(activeInfo.LastPoint, pointsToAdd[0]);
+                        var distance = CalculateDistance(activeInfo.LastPoint, pointsToAdd[0]);
                         
                         if (distance <= 5.0) // Threshold for what we consider "continuous"
                         {
@@ -174,7 +180,7 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
                 // Update the active stroke info
                 if (pointsToAdd.Count > 0)
                 {
-                    var lastPoint = pointsToAdd[pointsToAdd.Count - 1];
+                    var lastPoint = pointsToAdd[^1];
                     _activeStrokeInfo[userId] = new ActiveStrokeInfo(lastPoint, strokeColor, strokeWidth) 
                     { 
                         LastUpdate = now 
@@ -182,6 +188,31 @@ public class StrokeContinuityStage : GraphStage<FlowShape<ImmutableList<LocalPai
                 }
                 
                 resultStrokes.Add(connectedStroke);
+                continue;
+
+                (List<Point> points, bool disconnectFromPrevious, GreaterThanZeroInteger strokeWidth, Color strokeColor)
+                    ProcessEvents(IEnumerable<LocalPaintProtocol.IPaintSessionMessage> messages)
+                {
+                    var points = new List<Point>();
+                    var addPointStrokeWidth = GreaterThanZeroInteger.Default;
+                    var addPointStrokeColor = Color.Black;
+                    var disconnectFromPrevious = false;
+                    foreach (var message in messages)
+                    {
+                        if (message is LocalPaintProtocol.AddPointToConnectedStroke addPoint)
+                        {
+                            addPointStrokeWidth = addPoint.StrokeWidth;
+                            addPointStrokeColor = addPoint.StrokeColor;
+                            points.Add(addPoint.Point);
+                        }
+                        else if (message is LocalPaintProtocol.StrokeCompleted)
+                        {
+                            disconnectFromPrevious = true;
+                        }
+                    }
+                    
+                    return (points, disconnectFromPrevious, addPointStrokeWidth, addPointStrokeColor);
+                }
             }
             
             Log.Info("Processed batch with {0} points from {1} users, produced {2} strokes", 
@@ -206,7 +237,7 @@ public static class StrokeContinuityStageExtensions
     /// Adds stroke continuity tracking to a stream of batched point data
     /// </summary>
     public static Source<IEnumerable<ConnectedStroke>, TMat> WithStrokeContinuity<TMat>(
-        this Source<ImmutableList<LocalPaintProtocol.AddPointToConnectedStroke>, TMat> source,
+        this Source<ImmutableList<LocalPaintProtocol.IPaintSessionMessage>, TMat> source,
         TimeSpan? inactivityTimeout = null)
     {
         return source.Via(new StrokeContinuityStage(inactivityTimeout));
@@ -216,7 +247,7 @@ public static class StrokeContinuityStageExtensions
     /// Creates a connected stroke processing flow with both GroupedWithin and stroke continuity tracking
     /// </summary>
     public static Source<IDrawingSessionCommand, TMat> ToConnectedStrokes<TMat>(
-        this Source<LocalPaintProtocol.AddPointToConnectedStroke, TMat> source,
+        this Source<LocalPaintProtocol.IPaintSessionMessage, TMat> source,
         DrawingSessionId drawingSessionId,
         int batchSize = 10,
         TimeSpan? batchWindow = null,

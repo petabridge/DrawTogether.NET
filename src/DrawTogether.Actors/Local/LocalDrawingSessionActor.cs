@@ -117,6 +117,7 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         switch (message)
         {
             case AddPointToConnectedStroke:
+            case StrokeCompleted:
                 _debouncer.Tell(message);
                 break;
             case JoinPaintSession paintMessage:
@@ -214,17 +215,17 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         AttemptToSubscribe();
 
         Context.SetReceiveTimeout(TimeSpan.FromMinutes(20));
-        var (sourceRef, source) = Source.ActorRef<AddPointToConnectedStroke>(1000, OverflowStrategy.DropHead)
+        
+        // Use the more generic IPaintSessionMessage type to handle both point and completion events
+        var (sourceRef, source) = Source.ActorRef<IPaintSessionMessage>(1000, OverflowStrategy.DropHead)
             .PreMaterialize(_materializer);
 
         _debouncer = sourceRef;
 
-        // Use the StrokeContinuityStage extension method for cleaner implementation
+        // Use the enhanced ToConnectedStrokes method
         source.ToConnectedStrokes(
                 _drawingSessionId,
-                batchSize: 10,
-                batchWindow: TimeSpan.FromMilliseconds(75),
-                inactivityTimeout: TimeSpan.FromMilliseconds(250)
+                inactivityTimeout: TimeSpan.FromSeconds(30) // 30 seconds timeout as suggested
             )
             .SelectAsync(10, async c =>
             {

@@ -34,7 +34,10 @@ public static class StrokeBuilder
         
         // Use the extension method for a cleaner implementation
         log?.Info("Creating stroke source with batch size {0}, batch time {1}ms", batchSize, batchWhen.TotalMilliseconds);
-        return inputSource.ToConnectedStrokes(drawingSessionId, batchSize, batchWhen);
+        
+        // Convert AddPointToConnectedStroke to IPaintSessionMessage using Select
+        var messageSource = inputSource.Select(LocalPaintProtocol.IPaintSessionMessage (x) => x);
+        return messageSource.ToConnectedStrokes(drawingSessionId, inactivityTimeout: batchWhen);
     }
     
     // This method is maintained for backward compatibility with tests and other code
