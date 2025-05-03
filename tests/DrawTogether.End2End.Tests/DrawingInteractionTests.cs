@@ -50,7 +50,7 @@ public class DrawingInteractionTests : IAsyncLifetime
         _output.WriteLine("App is running");
     }
     
-    [Fact(Skip = "Need to fix endpoint connectivity")]
+    [Fact()]
     public async Task CanDrawOnCanvas()
     {
         // Get the URL of the DrawTogether web app from Aspire
@@ -63,7 +63,10 @@ public class DrawingInteractionTests : IAsyncLifetime
         await page.GotoAsync(endpoint.ToString());
         
         // Handle authentication if needed - example for form-based auth
-        // await HandleAuthentication(page);
+        await HandleAuthentication(page, endpoint);
+        
+        // next, we need to create a new drawing
+        await page.GotoAsync(new Uri(endpoint, "/NewDrawing").ToString());
         
         // Wait for the canvas to be present
         _output.WriteLine("Waiting for canvas element");
@@ -114,15 +117,25 @@ public class DrawingInteractionTests : IAsyncLifetime
         await page.ScreenshotAsync(new PageScreenshotOptions { Path = "drawing-test.png" });
     }
     
-    private async Task HandleAuthentication(IPage page)
+    private async Task HandleAuthentication(IPage page, Uri baseUri)
     {
         _output.WriteLine("Handling authentication");
-        // Example for form-based authentication
-        await page.FillAsync("#username", "testuser");
-        await page.FillAsync("#password", "password");
-        await page.ClickAsync("#login-button");
+        var authUrl = new Uri(baseUri, "/Account/Register");
+        await page.GotoAsync(authUrl.ToString());
+        
+        // 1) Email input
+        await page.FillAsync("input[name=\"Input.Email\"]", "testuser@drawtogether.io");
+        
+        // 2) Password input
+        await page.FillAsync("input[name=\"Input.Password\"]", "DrawTogether123!");
+        
+        // 3) Confirm password input
+        await page.FillAsync("input[name=\"Input.ConfirmPassword\"]", "DrawTogether123!");
+        
+        // 4) Submit button
+        await page.ClickAsync("button[type=\"submit\"]");
         
         // Wait for navigation to complete - using await page.WaitForURLAsync() instead of WaitForNavigationAsync
-        await page.WaitForURLAsync("**/dashboard");
+        await page.WaitForURLAsync(baseUri.ToString());
     }
 } 

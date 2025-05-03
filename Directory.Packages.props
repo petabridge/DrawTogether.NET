@@ -6,6 +6,7 @@
     <AkkaManagementVersion>1.5.37</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.4</PetabridgeCmdVersion>
     <AspireVersion>9.2.1</AspireVersion>
+    <PlaywrightVersion>1.42.0</PlaywrightVersion>
   </PropertyGroup>
   <!-- Akka.NET Package Versions -->
   <ItemGroup>
@@ -17,7 +18,6 @@
     <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.40.1" />
     <PackageVersion Include="Akka.Streams" Version="$(AkkaVersion)" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="$(AkkaVersion)" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="9.2.1" />
     <PackageVersion Include="Grpc.Tools" Version="2.68.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -64,8 +64,9 @@
   </ItemGroup>
   <!-- Test Package Versions -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.Playwright" Version="1.42.0" />
-    <PackageVersion Include="Microsoft.Playwright.MSTest" Version="1.42.0" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="$(AspireVersion)" />
+    <PackageVersion Include="Microsoft.Playwright" Version="$(PlaywrightVersion)" />
+    <PackageVersion Include="Microsoft.Playwright.MSTest" Version="$(PlaywrightVersion)" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2">
