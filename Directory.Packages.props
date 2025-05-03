@@ -64,6 +64,8 @@
   </ItemGroup>
   <!-- Test Package Versions -->
   <ItemGroup>
+    <PackageVersion Include="Microsoft.Playwright" Version="1.42.0" />
+    <PackageVersion Include="Microsoft.Playwright.MSTest" Version="1.42.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2">
