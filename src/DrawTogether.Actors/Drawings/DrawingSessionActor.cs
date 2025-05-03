@@ -209,8 +209,11 @@ public static class DrawingSessionActorExtensions
                 StateStoreMode = StateStoreMode.DData,
                 RememberEntities = true,
                 RememberEntitiesStore = RememberEntitiesStore.Eventsourced,
-                Role = clusterRoleName,
-                DistributedData = { Durable = new DurableOptions() { Keys = [] } } // disable persistence
+                Role = clusterRoleName
+            })
+            .WithShardingDistributedData(new ShardingDDataOptions()
+            {
+                Durable = new DurableOptions() { Keys = [] } // disable persistence
             });
         return builder;
     }
