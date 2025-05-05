@@ -217,7 +217,8 @@ public sealed class LocalDrawingSessionActor : UntypedActor, IWithTimers
         Context.SetReceiveTimeout(TimeSpan.FromMinutes(20));
         
         // Use the more generic IPaintSessionMessage type to handle both point and completion events
-        var (sourceRef, source) = Source.ActorRef<IPaintSessionMessage>(1000, OverflowStrategy.DropHead)
+        var (sourceRef, source) = Source
+            .ActorRef<IPaintSessionMessage>(1000, OverflowStrategy.DropHead)
             .PreMaterialize(_materializer);
 
         _debouncer = sourceRef;
