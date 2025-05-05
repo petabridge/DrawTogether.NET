@@ -1,6 +1,6 @@
 # DrawTogether.NET
 
-![DrawTogether Logo](/docs/images/drawtogether-logo-with-text.png)
+![DrawTogether Logo](/docs/images/drawtogether-logo-with-text_180x180.png)
 
 A collaborative browser-based drawing program written in .NET. Think of it like "multi-player MS paint."
 
