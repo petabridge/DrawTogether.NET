@@ -11,8 +11,10 @@
 <MudLayout>
     <MudAppBar Elevation="1" Color="Color.Primary">
         <MudLink Href="/" Underline="Underline.None" Color="Color.Inherit">
-            <img src="/drawtogether-logo-transparent.png" alt="DrawTogether - MS Paint with Friends" height="80" />
-            <MudText Typo="Typo.h6" Class="mr-4">DrawTogether</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <img src="/drawtogether-logo-transparent.png" alt="DrawTogether - MS Paint with friends" height="40" />
+                <MudText Typo="Typo.h6">DrawTogether</MudText>
+            </MudStack>
         </MudLink>
         
         <AuthorizeView>
@@ -35,7 +37,7 @@
                 
                 <form method="post" action="Account/Logout" style="display: inline-block;">
                     <AntiforgeryToken />
-                    <input name="ReturnUrl" type="hidden" value="@_returnUrl" />
+                    <input name="ReturnUrl" type="hidden" value="@ReturnUrl" />
                     <MudButton 
                         StartIcon="@Icons.Material.Filled.ExitToApp" 
                         Color="Color.Inherit"
@@ -89,5 +91,5 @@
 </div>
 
 @code {
-    private string _returnUrl => NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+    private string ReturnUrl => NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
 }
