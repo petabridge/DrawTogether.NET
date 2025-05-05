@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 using Xunit.Abstractions;
+using System.IO;
 
 namespace DrawTogether.End2End.Tests;
 
@@ -144,10 +145,20 @@ public class DrawingInteractionTests : IAsyncLifetime
         
         _output.WriteLine("Submitted form");
         
-        // Wait for navigation to complete - using await page.WaitForURLAsync() instead of WaitForNavigationAsync
-        _output.WriteLine("Expecting redirect back to " + baseUri);
-        await page.WaitForURLAsync(baseUri.ToString());
-        
-        _output.WriteLine("Authenticated successfully");
+        // Wait for UI elements that indicate successful authentication instead of URL change
+        try {
+            // Check for authenticated-only elements
+            await page.WaitForSelectorAsync("a[href='NewPaint']", new() { Timeout = 5000 });
+            
+            // Additional verification - check that logout button is visible
+            await page.WaitForSelectorAsync("button[buttontype='Submit']:has-text('Logout')", new() { Timeout = 1000 });
+            
+            _output.WriteLine("Authentication verified by UI elements");
+        } catch (Exception ex) {
+            _output.WriteLine($"Authentication verification failed: {ex.Message}");
+            var screenshotPath = await ScreenshotHelper.SaveScreenshot(page, "auth-failure");
+            _output.WriteLine($"Screenshot saved to: {screenshotPath}");
+            throw;
+        }
     }
 } 
