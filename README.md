@@ -1,6 +1,13 @@
 # DrawTogether.NET
 
-A collaborative browser-based drawing program written in .NET.
+A collaborative browser-based drawing program written in .NET. Think of it like "multi-player MS paint."
+
+## Architecture and Motivation 
+
+Want to understand how DrawTogether was built and how it works? Please see our videos on the subject:
+
+* [Building Real-Time Web Applications with Blazor and Akka.NET](https://www.youtube.com/watch?v=jRYVp_lySl8)
+* [Application Design with Actors Made Easy: Think Locally, Act Globally](https://www.youtube.com/watch?v=K5qaCnBcy-E)
 
 ## Running Locally
 
@@ -39,7 +46,7 @@ To generate a migration script that you can apply manually (later):
 dotnet ef migrations script
 ```
 
-## MailGun Configuration
+### MailGun Configuration
 
 DrawTogether.NET can use [MailGun](https://mailgun.com/) to send outbound emails (via `FluentEmail.Mailgun`) - and the following two secrets need to be configured in order for that sending to work:
 
