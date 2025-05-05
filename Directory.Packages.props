@@ -11,12 +11,14 @@
   <ItemGroup>
     <PackageVersion Include="Akka" Version="$(AkkaVersion)" />
     <PackageVersion Include="Akka.Cluster.Hosting" Version="$(AkkaHostingVersion)" />
+    <PackageVersion Include="Akka.Discovery.Azure" Version="$(AkkaManagementVersion)" />
     <PackageVersion Include="Akka.Discovery.KubernetesApi" Version="$(AkkaManagementVersion)" />
     <PackageVersion Include="Akka.Hosting" Version="$(AkkaHostingVersion)" />
     <PackageVersion Include="Akka.Management" Version="$(AkkaManagementVersion)" />
     <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.40.1" />
     <PackageVersion Include="Akka.Streams" Version="$(AkkaVersion)" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="$(AkkaVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="9.2.1" />
     <PackageVersion Include="Grpc.Tools" Version="2.68.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

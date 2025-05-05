@@ -30,6 +30,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Akka.Discovery.Azure" />
         <PackageReference Include="Akka.Discovery.KubernetesApi" />
         <PackageReference Include="Akka.Management" />
         <PackageReference Include="Akka.Persistence.Sql.Hosting" />

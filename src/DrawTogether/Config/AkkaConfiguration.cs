@@ -1,4 +1,6 @@
-﻿using Akka.Cluster.Hosting;
+﻿using System.Diagnostics;
+using Akka.Cluster.Hosting;
+using Akka.Discovery.Azure;
 using Akka.Discovery.Config.Hosting;
 using Akka.Discovery.KubernetesApi;
 using Akka.Hosting;
@@ -91,16 +93,15 @@ public static class AkkaConfiguration
                     break;
                 case DiscoveryMethod.AzureTableStorage:
                 {
-                    // var connectionStringName = configuration.GetSection("AzureStorageSettings")
-                    //     .Get<AzureStorageSettings>()?.ConnectionStringName;
-                    // Debug.Assert(connectionStringName != null, nameof(connectionStringName) + " != null");
-                    // var connectionString = configuration.GetConnectionString(connectionStringName);
-                    //
-                    // builder.WithAzureDiscovery(options =>
-                    // {
-                    //     options.ServiceName = settings.AkkaManagementOptions.ServiceName;
-                    //     options.ConnectionString = connectionString;
-                    // });
+                    var connectionString = configuration.GetConnectionString("AzureStorage");
+                    if (connectionString is null)
+                        throw new Exception("AzureStorage ConnectionString is missing");
+                    
+                    builder.WithAzureDiscovery(options =>
+                    {
+                        options.ServiceName = settings.AkkaManagementOptions.ServiceName;
+                        options.ConnectionString = connectionString;
+                    });
                     break;
                 }
                 case DiscoveryMethod.Config:
