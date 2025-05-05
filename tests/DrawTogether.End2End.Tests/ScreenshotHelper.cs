@@ -15,8 +15,8 @@ public static class ScreenshotHelper
         
         // Generate filename with timestamp to avoid overwrites
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string filename = $"{screenshotName}_{timestamp}.png";
-        string fullPath = Path.Combine(screenshotDir, filename);
+        var filename = $"{screenshotName}_{timestamp}.png";
+        var fullPath = Path.Combine(screenshotDir, filename);
         
         // Save the screenshot - explicitly specify PNG format
         await page.ScreenshotAsync(new PageScreenshotOptions 

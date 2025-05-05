@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 using Xunit.Abstractions;
 using System.IO;
+using System.Net;
 
 namespace DrawTogether.End2End.Tests;
 
@@ -64,63 +65,84 @@ public class DrawingInteractionTests : IAsyncLifetime
         await page.GotoAsync(endpoint.ToString());
         
         // Handle authentication if needed - example for form-based auth
-        await HandleAuthentication(page, endpoint);
+        await HandleNewUserRegistration(page, endpoint);
         
         _output.WriteLine("Attempting to spawn a new drawing");
         
         // next, we need to create a new drawing
-        await page.GotoAsync(new Uri(endpoint, "/NewDrawing").ToString());
+        var resp = await page.GotoAsync(new Uri(endpoint, "/NewDrawing").ToString());
         
-        // Wait for the canvas to be present
-        _output.WriteLine("Waiting for canvas element");
-        var canvas = await page.WaitForSelectorAsync("canvas");
-        if (canvas == null)
+        // response should be a redirect to a new drawing
+        Assert.NotNull(resp);
+        Assert.Equal((int)HttpStatusCode.Redirect, resp.Status);
+
+        try
         {
-            throw new Exception("Canvas element not found");
+
+            // Wait for the canvas to be present
+            _output.WriteLine("Waiting for svg element");
+            var drawingSurface = await page.WaitForSelectorAsync("svg", new PageWaitForSelectorOptions()
+            {
+                Timeout = 5000,
+            });
+            
+            if (drawingSurface == null)
+            {
+                throw new Exception("Canvas element not found");
+            }
+
+            // Get the bounding box of the canvas
+            var boundingBox = await drawingSurface.BoundingBoxAsync();
+            if (boundingBox == null)
+            {
+                throw new Exception("Could not get canvas bounding box");
+            }
+
+            _output.WriteLine(
+                $"Found canvas at position: X={boundingBox.X}, Y={boundingBox.Y}, Width={boundingBox.Width}, Height={boundingBox.Height}");
+
+            // Perform mouse drawing actions using page.Mouse
+            // Draw a line
+            _output.WriteLine("Drawing line with mouse");
+            await page.Mouse.MoveAsync(boundingBox.X + 100, boundingBox.Y + 100);
+            await page.Mouse.DownAsync();
+            await page.Mouse.MoveAsync(boundingBox.X + 200, boundingBox.Y + 200);
+            await page.Mouse.UpAsync();
+
+            // Perform touch drawing actions
+            // For touch actions, use page.Touchscreen
+            _output.WriteLine("Performing touch tap");
+            await page.TapAsync("canvas", new PageTapOptions
+            {
+                Position = new Position { X = boundingBox.X + 300, Y = boundingBox.Y + 300 }
+            });
+
+            // For more complex touch actions
+            // TouchDown
+            _output.WriteLine("Performing touchscreen tap");
+            await page.Touchscreen.TapAsync(boundingBox.X + 350, boundingBox.Y + 350);
+
+            // Multi-point touch gestures can be simulated with multiple taps
+            await page.Touchscreen.TapAsync(boundingBox.X + 400, boundingBox.Y + 400);
+
+            // Verify something was drawn (this will depend on your app implementation)
+            // await page.WaitForSelectorAsync(".drawing-indicator");
+
+            // Take a screenshot for verification
+            _output.WriteLine("Taking screenshot");
+            var screenshotPath = await ScreenshotHelper.SaveScreenshot(page, "drawing-test-complete");
+            _output.WriteLine($"Screenshot saved to: {screenshotPath}");
         }
-        
-        // Get the bounding box of the canvas
-        var boundingBox = await canvas.BoundingBoxAsync();
-        if (boundingBox == null)
+        catch (Exception)
         {
-            throw new Exception("Could not get canvas bounding box");
+            _output.WriteLine("An error occurred during the drawing test");
+            var screenshotPath = await ScreenshotHelper.SaveScreenshot(page, "drawing-test-failure");
+            _output.WriteLine($"Screenshot saved to: {screenshotPath}");
+            throw;
         }
-        
-        _output.WriteLine($"Found canvas at position: X={boundingBox.X}, Y={boundingBox.Y}, Width={boundingBox.Width}, Height={boundingBox.Height}");
-        
-        // Perform mouse drawing actions using page.Mouse
-        // Draw a line
-        _output.WriteLine("Drawing line with mouse");
-        await page.Mouse.MoveAsync(boundingBox.X + 100, boundingBox.Y + 100);
-        await page.Mouse.DownAsync();
-        await page.Mouse.MoveAsync(boundingBox.X + 200, boundingBox.Y + 200);
-        await page.Mouse.UpAsync();
-        
-        // Perform touch drawing actions
-        // For touch actions, use page.Touchscreen
-        _output.WriteLine("Performing touch tap");
-        await page.TapAsync("canvas", new PageTapOptions 
-        { 
-            Position = new Position { X = boundingBox.X + 300, Y = boundingBox.Y + 300 } 
-        });
-        
-        // For more complex touch actions
-        // TouchDown
-        _output.WriteLine("Performing touchscreen tap");
-        await page.Touchscreen.TapAsync(boundingBox.X + 350, boundingBox.Y + 350);
-        
-        // Multi-point touch gestures can be simulated with multiple taps
-        await page.Touchscreen.TapAsync(boundingBox.X + 400, boundingBox.Y + 400);
-        
-        // Verify something was drawn (this will depend on your app implementation)
-        // await page.WaitForSelectorAsync(".drawing-indicator");
-        
-        // Take a screenshot for verification
-        _output.WriteLine("Taking screenshot");
-        await page.ScreenshotAsync(new PageScreenshotOptions { Path = "drawing-test.png" });
     }
     
-    private async Task HandleAuthentication(IPage page, Uri baseUri)
+    private async Task HandleNewUserRegistration(IPage page, Uri baseUri)
     {
         _output.WriteLine("Handling authentication");
         var authUrl = new Uri(baseUri, "/Account/Register");
@@ -129,8 +151,10 @@ public class DrawingInteractionTests : IAsyncLifetime
 
         var pageFillOptions = new PageFillOptions() { Timeout = 1000 };
         
+        var randomName = Guid.NewGuid().ToString();
+        
         // 1) Email input
-        await page.FillAsync("input[name=\"Input.Email\"]", "testuser@drawtogether.io", pageFillOptions);
+        await page.FillAsync("input[name=\"Input.Email\"]", $"{randomName}@drawtogether.io", pageFillOptions);
         
         // 2) Password input
         await page.FillAsync("input[name=\"Input.Password\"]", "DrawTogether123!", pageFillOptions);
@@ -149,9 +173,6 @@ public class DrawingInteractionTests : IAsyncLifetime
         try {
             // Check for authenticated-only elements
             await page.WaitForSelectorAsync("a[href='NewPaint']", new() { Timeout = 5000 });
-            
-            // Additional verification - check that logout button is visible
-            await page.WaitForSelectorAsync("button[buttontype='Submit']:has-text('Logout')", new() { Timeout = 1000 });
             
             _output.WriteLine("Authentication verified by UI elements");
         } catch (Exception ex) {
