@@ -120,7 +120,7 @@ jobs:
         run: dotnet test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
 
       - name: Upload Playwright screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-screenshots
           path: TestScreenshots/**/*
