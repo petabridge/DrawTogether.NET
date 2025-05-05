@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup>
+  <PropertyGroup Label="SharedVersions">
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <AkkaVersion>1.5.40</AkkaVersion>
     <AkkaHostingVersion>1.5.40</AkkaHostingVersion>

@@ -86,8 +86,35 @@ jobs:
         run: |
           ./build.ps1
 
+      - name: Extract PlayWrightVersion using PowerShell
+        id: playwright_version
+        shell: pwsh
+        run: |
+          $xml = [xml](Get-Content './Directory.Packages.props')
+          $playwrightVersion = $xml.Project.PropertyGroup | Where-Object { $_.Label -eq 'SharedVersions' } | Select-Object -ExpandProperty PlayWrightVersion
+          echo "PlayWrightVersion=$playwrightVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Use PlayWrightVersion
+        run: |
+          echo "The Playwright version is: ${{ env.PlayWrightVersion }}"
+
+      # https://playwrightsolutions.com/playwright-github-action-to-cache-the-browser-binaries/
+      - name: Cache playwright binaries
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ env.PlayWrightVersion }}
+
       - name: "dotnet build"
         run: dotnet build -c Release
+
+      - name: "Ensure playwright browsers are installed"
+        working-directory: ./src/tests/DrawTogether.End2End.Tests
+        shell: pwsh
+        run: ./bin/Release/net9.0/playwright.ps1 install --with-deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
 
       - name: "dotnet test"
         run: dotnet test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
