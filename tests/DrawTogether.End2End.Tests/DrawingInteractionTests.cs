@@ -1,11 +1,5 @@
 using Microsoft.Playwright;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components.Web;
-using Xunit;
 using Xunit.Abstractions;
-using System.IO;
 using System.Net;
 
 namespace DrawTogether.End2End.Tests;
@@ -52,7 +46,7 @@ public class DrawingInteractionTests : IAsyncLifetime
         _output.WriteLine("App is running");
     }
     
-    [Fact()]
+    [Fact]
     public async Task CanDrawOnCanvas()
     {
         // Get the URL of the DrawTogether web app from Aspire
@@ -70,33 +64,50 @@ public class DrawingInteractionTests : IAsyncLifetime
         _output.WriteLine("Attempting to spawn a new drawing");
         
         // next, we need to create a new drawing
-        var resp = await page.GotoAsync(new Uri(endpoint, "/NewDrawing").ToString());
+        var resp = await page.GotoAsync(
+            new Uri(endpoint, "/NewPaint").ToString(),
+            new PageGotoOptions {
+                WaitUntil = WaitUntilState.NetworkIdle
+            }
+        );
         
-        // response should be a redirect to a new drawing
+        // response should be a redirect to a new drawing (status code 200 because: Blazor)
         Assert.NotNull(resp);
-        Assert.Equal((int)HttpStatusCode.Redirect, resp.Status);
+        Assert.Equal(200, resp.Status);
 
         try
         {
 
             // Wait for the canvas to be present
             _output.WriteLine("Waiting for svg element");
-            var drawingSurface = await page.WaitForSelectorAsync("svg", new PageWaitForSelectorOptions()
-            {
-                Timeout = 5000,
+            // 1) (Optional) wait for the Blazor container to render
+            var surfaceDiv = await page.WaitForSelectorAsync("div#paint-session", new PageWaitForSelectorOptions {
+                State   = WaitForSelectorState.Attached,
+                Timeout = 5_000
             });
+
+            // 2) now wait for _its_ SVG to appear and be visible
+            var drawingSurface = await page.WaitForSelectorAsync(
+                "div#paint-session svg",
+                new PageWaitForSelectorOptions {
+                    State   = WaitForSelectorState.Visible,
+                    Timeout = 5_000
+                }
+            );
             
-            if (drawingSurface == null)
+            if (drawingSurface == null || surfaceDiv == null)
             {
-                throw new Exception("Canvas element not found");
+                throw new Exception("svg element not found");
             }
 
             // Get the bounding box of the canvas
-            var boundingBox = await drawingSurface.BoundingBoxAsync();
+            var boundingBox = await surfaceDiv.BoundingBoxAsync();
             if (boundingBox == null)
             {
-                throw new Exception("Could not get canvas bounding box");
+                throw new Exception("Could not get svg bounding box");
             }
+            
+            _output.WriteLine($"Drawing area: {boundingBox.Width}×{boundingBox.Height} at {boundingBox.X},{boundingBox.Y}");
 
             _output.WriteLine(
                 $"Found canvas at position: X={boundingBox.X}, Y={boundingBox.Y}, Width={boundingBox.Width}, Height={boundingBox.Height}");
