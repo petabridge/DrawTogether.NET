@@ -1,6 +1,6 @@
 ﻿using Microsoft.Playwright;
 
-namespace DrawTogether.End2End.Tests;
+namespace DrawTogether.End2End.Tests.Util;
 
 /// <summary>
 /// Static helper class for saving screenshots in Playwright tests.

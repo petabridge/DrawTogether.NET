@@ -1,4 +1,5 @@
-﻿using Microsoft.Playwright;
+﻿using DrawTogether.End2End.Tests.Util;
+using Microsoft.Playwright;
 using Xunit.Abstractions;
 using static DrawTogether.End2End.Tests.Util.DrawTogetherPlaywrightHelpers;
 
@@ -32,13 +33,14 @@ public class DrawingTouchInteractionTests : IAsyncLifetime
         await _browser.DisposeAsync();
         _playwright.Dispose();
     }
-    
-    public async Task<IBrowserContext> GetContext(int viewPortX, int viewPortY)
+
+    private async Task<IBrowserContext> GetContext(int viewPortX, int viewPortY)
     {
         return await _browser.NewContextAsync(new BrowserNewContextOptions()
         {
             HasTouch = true,
-            ViewportSize = new ViewportSize { Width = viewPortX, Height = viewPortY }
+            ViewportSize = new ViewportSize { Width = viewPortX, Height = viewPortY },
+            IgnoreHTTPSErrors = true
         });
     }
     

@@ -1,3 +1,4 @@
+using DrawTogether.End2End.Tests.Util;
 using Microsoft.Playwright;
 using Xunit.Abstractions;
 using static DrawTogether.End2End.Tests.Util.DrawTogetherPlaywrightHelpers;
@@ -26,7 +27,10 @@ public class DrawingMouseInteractionTests : IAsyncLifetime
         {
             Headless = true,
         });
-        _context = await _browser.NewContextAsync();
+        _context = await _browser.NewContextAsync(new BrowserNewContextOptions()
+        {
+            IgnoreHTTPSErrors = true
+        });
     }
     
     public async Task DisposeAsync()
