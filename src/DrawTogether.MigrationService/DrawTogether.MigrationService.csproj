@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
+    <PropertyGroup>
+        <IsPublishable>false</IsPublishable >
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
         <PackageReference Include="Microsoft.Extensions.Hosting"/>
