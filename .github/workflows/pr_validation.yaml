@@ -111,11 +111,16 @@ jobs:
         run: dotnet build -c Release
 
       - name: "Ensure playwright browsers are installed"
-        working-directory: ./src/tests/DrawTogether.End2End.Tests
+        working-directory: ./tests/DrawTogether.End2End.Tests
         shell: pwsh
         run: ./bin/Release/net9.0/playwright.ps1 install --with-deps
         if: steps.playwright-cache.outputs.cache-hit != 'true'
 
       - name: "dotnet test"
         run: dotnet test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
-      
+
+      - name: Upload Playwright screenshots
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-screenshots
+          path: TestScreenshots/**/*
