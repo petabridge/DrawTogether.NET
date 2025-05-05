@@ -7,7 +7,7 @@ A collaborative browser-based drawing program written in .NET.
 First things first, you will need to launch the dependencies for DrawTogether.NET - make sure you have `docker` installed locally - the easiest way to do this is with [].NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview):
 
 ```shell
-dotnet run --project --project src/DrawTogether.AppHost/DrawTogether.AppHost.csproj
+dotnet run --project src/DrawTogether.AppHost/DrawTogether.AppHost.csproj
 ```
 
 This will:
