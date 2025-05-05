@@ -11,7 +11,7 @@ Want to understand how DrawTogether was built and how it works? Please see our v
 
 ## Running Locally
 
-First things first, you will need to launch the dependencies for DrawTogether.NET - make sure you have `docker` installed locally - the easiest way to do this is with [].NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview):
+First things first, you will need to launch the dependencies for DrawTogether.NET - make sure you have `docker` installed locally - the easiest way to do this is with [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview):
 
 ```shell
 dotnet run --project src/DrawTogether.AppHost/DrawTogether.AppHost.csproj
