@@ -6,7 +6,7 @@
     <AkkaManagementVersion>1.5.37</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.4</PetabridgeCmdVersion>
     <AspireVersion>9.2.1</AspireVersion>
-    <PlaywrightVersion>1.42.0</PlaywrightVersion>
+    <PlaywrightVersion>1.52.0</PlaywrightVersion>
   </PropertyGroup>
   <!-- Akka.NET Package Versions -->
   <ItemGroup>
