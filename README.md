@@ -2,25 +2,22 @@
 
 A collaborative browser-based drawing program written in .NET.
 
-Please see [REQUIREMENTS](docs/requirements.md) for more information.
-
 ## Running Locally
 
-First things first, you will need to launch the dependencies for DrawTogether.NET - make sure you have `docker` installed locally:
-
-**Windows**
+First things first, you will need to launch the dependencies for DrawTogether.NET - make sure you have `docker` installed locally - the easiest way to do this is with [].NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview):
 
 ```shell
-start-dependencies.cmd
+dotnet run --project --project src/DrawTogether.AppHost/DrawTogether.AppHost.csproj
 ```
 
-**Linux**
+This will:
+- Start the SQL Server database
+- Run the migration service to initialize the database
+- Launch the DrawTogether web application
+- Open the Aspire dashboard in your browser
 
-```shell
-start-dependencies.sh
-```
+The Aspire dashboard will show you all running services with their statuses and endpoints.
 
-This will launch, among other things, a prebuilt SQL Server 2022 instance that has the correct default connection string and `DrawTogether` database required by DrawTogether.NET.
 
 ### Entity Framework Core Migrations
 
