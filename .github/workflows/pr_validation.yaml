@@ -81,6 +81,9 @@ jobs:
         with:
           global-json-file: "./global.json"
 
+      - name: "dotnet tool restore"
+        run: dotnet tool restore
+
       - name: "Update release notes"
         shell: pwsh
         run: |
@@ -93,10 +96,12 @@ jobs:
           $xml = [xml](Get-Content './Directory.Packages.props')
           $playwrightVersion = $xml.Project.PropertyGroup | Where-Object { $_.Label -eq 'SharedVersions' } | Select-Object -ExpandProperty PlayWrightVersion
           echo "PlayWrightVersion=$playwrightVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+        if: runner.os == 'Linux'
 
       - name: Use PlayWrightVersion
         run: |
           echo "The Playwright version is: ${{ env.PlayWrightVersion }}"
+        if: runner.os == 'Linux'
 
       # https://playwrightsolutions.com/playwright-github-action-to-cache-the-browser-binaries/
       - name: Cache playwright binaries
@@ -106,6 +111,7 @@ jobs:
           path: |
             ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ env.PlayWrightVersion }}
+        if: runner.os == 'Linux'
 
       - name: "dotnet build"
         run: dotnet build -c Release
@@ -114,13 +120,19 @@ jobs:
         working-directory: ./tests/DrawTogether.End2End.Tests
         shell: pwsh
         run: ./bin/Release/net9.0/playwright.ps1 install --with-deps
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        if: runner.os == 'Linux' && steps.playwright-cache.outputs.cache-hit != 'true'
 
       - name: "dotnet test"
         run: dotnet test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+        if: runner.os == 'Linux'
+
+      - name: "dotnet test (unit tests only - Windows)"
+        run: dotnet incrementalist run --config .incrementalist/incrementalistWindows.json -- test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+        if: runner.os == 'Windows'
 
       - name: Upload Playwright screenshots
         uses: actions/upload-artifact@v4
         with:
           name: playwright-screenshots-${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
           path: '**/TestScreenshots/**/*'
+        if: runner.os == 'Linux'
