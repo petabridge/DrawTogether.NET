@@ -122,5 +122,5 @@ jobs:
       - name: Upload Playwright screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-screenshots
+          name: playwright-screenshots-${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
           path: '**/TestScreenshots/**/*'
