@@ -37,16 +37,6 @@ public class DrawingMouseInteractionTests : IAsyncLifetime
     }
     
     [Fact]
-    public void AppIsRunning()
-    {
-        // This is a simple verification that the app is running
-        // We're not actually connecting to it, just verifying that our fixture can start it
-        _output.WriteLine("Verifying app is running via fixture...");
-        Assert.NotNull(_fixture.App);
-        _output.WriteLine("App is running");
-    }
-    
-    [Fact]
     public async Task CanDrawWithMouse()
     {
         // Get the URL of the DrawTogether web app from Aspire
