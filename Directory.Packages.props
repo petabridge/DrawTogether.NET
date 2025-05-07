@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup Label="SharedVersions">
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AkkaVersion>1.5.40</AkkaVersion>
+    <AkkaVersion>1.5.41</AkkaVersion>
     <AkkaHostingVersion>1.5.40</AkkaHostingVersion>
     <AkkaManagementVersion>1.5.37</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.4</PetabridgeCmdVersion>
