@@ -3,8 +3,13 @@ using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+
 var drawTogetherAspireConfig = builder.Configuration.GetSection("DrawTogether")
     .Get<DrawTogetherConfiguration>() ?? new DrawTogetherConfiguration();
+
+builder.AddDockerComposePublisher()
+    .AddKubernetesPublisher();
+
 
 var sqlServer = builder.AddSqlServer("sql");
 if (drawTogetherAspireConfig.UseVolumes)
