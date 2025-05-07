@@ -1,17 +1,6 @@
-using DrawTogether.AppHost;
-using Microsoft.Extensions.Configuration;
-
 var builder = DistributedApplication.CreateBuilder(args);
 
-var drawTogetherAspireConfig = builder.Configuration.GetSection("DrawTogether")
-    .Get<DrawTogetherConfiguration>() ?? new DrawTogetherConfiguration();
-
 var sqlServer = builder.AddSqlServer("sql");
-if (drawTogetherAspireConfig.UseVolumes)
-{
-    // add a persistent data volume that can survive restarts
-    sqlServer.WithDataVolume();
-}
 
 var db = sqlServer.AddDatabase("DrawTogetherDb");
 
