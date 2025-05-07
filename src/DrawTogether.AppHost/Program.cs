@@ -8,10 +8,21 @@ var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService
     .WaitFor(db)
     .WithReference(db);
 
-builder.AddProject<Projects.DrawTogether>("DrawTogether")
+var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
     .WithReference(db, "DefaultConnection")
-    .WaitForCompletion(migrationService);
-   // .WithReplicas(3);
+    .WaitForCompletion(migrationService)
+    .WithEndpoint("pbm", annotation =>
+    {
+        annotation.Port = 9110;
+        
+        // not mean to be external, meant to be invoked via the pbm-sidecar
+        annotation.IsExternal = false;
+        annotation.IsProxied = false;
+    });
+
+// https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
+var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")
+    .WaitFor(drawTogether);
 
 builder
     .Build()
