@@ -1,5 +1,8 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
+builder.AddDockerComposePublisher()
+    .AddKubernetesPublisher();
+
 var sqlServer = builder.AddSqlServer("sql");
 
 var db = sqlServer.AddDatabase("DrawTogetherDb");
