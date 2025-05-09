@@ -1,9 +1,30 @@
+using DrawTogether.AppHost;
+using Microsoft.Extensions.Configuration;
+
 var builder = DistributedApplication.CreateBuilder(args);
+
+
+var drawTogetherAspireConfig = builder.Configuration.GetSection("DrawTogether")
+    .Get<DrawTogetherConfiguration>() ?? new DrawTogetherConfiguration();
 
 builder.AddDockerComposePublisher()
     .AddKubernetesPublisher();
 
-var sqlServer = builder.AddSqlServer("sql");
+// Adding a default password for ease of use - we can get rid of this but for a quick "git clone and run" it makes sense
+// have to add this when using data volumes otherwise Aspire will brick itself
+
+var saPassword = builder.AddParameter(
+    "sql-sa-password",
+    () => "YourStrong!Passw0rd", // *must* satisfy SQL Server complexity rules
+    secret: true);
+
+var sqlServer = builder.AddSqlServer("sql", saPassword);
+
+if (drawTogetherAspireConfig.UseVolumes)
+{
+    // add a persistent data volume that can survive restarts
+    sqlServer.WithDataVolume();
+}
 
 var db = sqlServer.AddDatabase("DrawTogetherDb");
 
