@@ -10,8 +10,16 @@ var drawTogetherAspireConfig = builder.Configuration.GetSection("DrawTogether")
 builder.AddDockerComposePublisher()
     .AddKubernetesPublisher();
 
+// Adding a default password for ease of use - we can get rid of this but for a quick "git clone and run" it makes sense
+// have to add this when using data volumes otherwise Aspire will brick itself
 
-var sqlServer = builder.AddSqlServer("sql");
+var saPassword = builder.AddParameter(
+    "sql-sa-password",
+    () => "YourStrong!Passw0rd", // *must* satisfy SQL Server complexity rules
+    secret: true);
+
+var sqlServer = builder.AddSqlServer("sql", saPassword);
+
 if (drawTogetherAspireConfig.UseVolumes)
 {
     // add a persistent data volume that can survive restarts
