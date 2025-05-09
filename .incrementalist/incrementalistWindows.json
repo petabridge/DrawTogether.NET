@@ -1,0 +1,12 @@
+{
+  "gitBranch": "dev",
+  "verbose": false,
+  "timeoutMinutes": 5,
+  "continueOnError": true,
+  "runInParallel": true,
+  "failOnNoProjects": false,
+  "skip": [
+    "**/*.End2End.Tests.csproj"
+  ],
+  "target": []
+}

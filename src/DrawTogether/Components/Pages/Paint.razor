@@ -165,7 +165,7 @@
         while (_eventStream.TryRead(out var evt))
         {
             HandleEvent(evt);
-            await InvokeAsync(StateHasChanged);
+            await InvokeAsync(StateHasChanged); // drive the BlazorHub updates
         }
 
         // signal to local actor that we are done reading
