@@ -64,7 +64,6 @@ public static class AkkaConfiguration
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
-        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
         
         builder
             .WithRemoting(settings.RemoteOptions);
