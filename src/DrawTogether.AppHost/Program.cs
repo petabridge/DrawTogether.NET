@@ -8,7 +8,9 @@ var sqlServer = builder.AddSqlServer("sql");
 var db = sqlServer.AddDatabase("DrawTogetherDb");
 
 var azureStorage = builder.AddAzureStorage("storage")
-    .AddBlobs("blobs");
+    .RunAsEmulator();
+
+var tableStorage = azureStorage.AddTables("akka-discovery");
 
 var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService>("MigrationService")
     .WaitFor(db)
@@ -16,6 +18,7 @@ var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService
 
 var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
     .WithReference(db, "DefaultConnection")
+    .WithReference(tableStorage, "AzureStorage")
     .WaitForCompletion(migrationService)
     .WithEndpoint("pbm", annotation =>
     {

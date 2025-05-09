@@ -112,10 +112,10 @@ public static class AkkaConfiguration
                             options.Services.Add(new Service
                             {
                                 Name = settings.AkkaManagementOptions.ServiceName,
-                                Endpoints = new[]
-                                {
-                                    $"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}",
-                                }
+                                Endpoints =
+                                [
+                                    $"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}"
+                                ]
                             });
                         });
                     break;
