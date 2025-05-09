@@ -1,3 +1,4 @@
+using Aspire.Hosting.Azure;
 using DrawTogether.AppHost;
 using Microsoft.Extensions.Configuration;
 
@@ -28,10 +29,7 @@ if (drawTogetherAspireConfig.UseVolumes)
 
 var db = sqlServer.AddDatabase("DrawTogetherDb");
 
-var azureStorage = builder.AddAzureStorage("storage")
-    .RunAsEmulator();
-
-var tableStorage = azureStorage.AddTables("akka-discovery");
+var tableStorage = builder.ConfigureAkkaManagementStorage(drawTogetherAspireConfig);
 
 var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService>("MigrationService")
     .WaitFor(db)
@@ -39,7 +37,6 @@ var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService
 
 var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
     .WithReference(db, "DefaultConnection")
-    .WithReference(tableStorage, "AzureStorage")
     .WaitForCompletion(migrationService)
     .WithEndpoint("pbm", annotation =>
     {
@@ -49,6 +46,9 @@ var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
         annotation.IsExternal = false;
         annotation.IsProxied = false;
     });
+
+// enable Akka.Management, if necessary
+drawTogether.ConfigureAkkaManagementForApp(drawTogetherAspireConfig);
 
 // https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
 var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")

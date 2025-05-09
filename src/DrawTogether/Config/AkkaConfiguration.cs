@@ -93,9 +93,9 @@ public static class AkkaConfiguration
                     break;
                 case DiscoveryMethod.AzureTableStorage:
                 {
-                    var connectionString = configuration.GetConnectionString("AzureStorage");
+                    var connectionString = configuration.GetConnectionString("AkkaManagementAzure");
                     if (connectionString is null)
-                        throw new Exception("AzureStorage ConnectionString is missing");
+                        throw new Exception("AkkaManagement table storage connection string [AkkaManagementAzure] is missing");
                     
                     builder.WithAzureDiscovery(options =>
                     {
