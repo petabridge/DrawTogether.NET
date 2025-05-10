@@ -130,9 +130,16 @@ jobs:
         run: dotnet incrementalist run --config .incrementalist/incrementalistWindows.json -- test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
         if: runner.os == 'Windows'
 
-      - name: Upload Playwright screenshots
+      - name: Collect Playwright screenshots into one folder
+        run: |
+          mkdir -p flat-screenshots
+          # find every file under any TestScreenshots directory and copy it into flat-screenshots/
+          find . -type f -path '*/TestScreenshots/*' -exec cp {} flat-screenshots/ \;
+        if: runner.os == 'Linux'
+
+      - name: Upload flattened screenshots
         uses: actions/upload-artifact@v4
         with:
           name: playwright-screenshots-${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
-          path: '**/TestScreenshots/**/*'
+          path: flat-screenshots/
         if: runner.os == 'Linux'
