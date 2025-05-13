@@ -78,9 +78,13 @@ public static class AkkaConfiguration
             builder
                 .WithClustering(clusterOptions)
                 .WithAkkaManagement(port: settings.AkkaManagementOptions.Port)
-                .WithClusterBootstrap(serviceName: settings.AkkaManagementOptions.ServiceName,
-                    portName: settings.AkkaManagementOptions.PortName,
-                    requiredContactPoints: settings.AkkaManagementOptions.RequiredContactPointsNr);
+                .WithClusterBootstrap(options =>
+                {
+                    options.ContactPointDiscovery.ServiceName = settings.AkkaManagementOptions.ServiceName;
+                    options.ContactPointDiscovery.PortName = settings.AkkaManagementOptions.PortName;
+                    options.ContactPointDiscovery.RequiredContactPointsNr = settings.AkkaManagementOptions.RequiredContactPointsNr;
+                    options.ContactPointDiscovery.ContactWithAllContactPoints = true;
+                });
 
             switch (settings.AkkaManagementOptions.DiscoveryMethod)
             {

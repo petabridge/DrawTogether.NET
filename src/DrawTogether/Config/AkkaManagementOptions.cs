@@ -7,7 +7,7 @@ public class AkkaManagementOptions
 {
     public bool Enabled { get; set; } = false;
     public string Hostname { get; set; } = Dns.GetHostName();
-    public int Port { get; set; } = 8558;
+    public int Port { get; set; }
     public string PortName { get; set; } = "management";
 
     public string ServiceName { get; set; } = "drawtogether";
