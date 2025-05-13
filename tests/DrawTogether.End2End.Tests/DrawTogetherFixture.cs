@@ -11,7 +11,11 @@ public class DrawTogetherFixture : IAsyncLifetime
     
     public async Task InitializeAsync()
     {
-        var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.DrawTogether_AppHost>();
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.DrawTogether_AppHost>([
+            "DrawTogether:UseVolumes=false",
+            "DrawTogether:UseAkkaManagement=false"
+        ]);
+
         _app = await builder.BuildAsync();
         
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
