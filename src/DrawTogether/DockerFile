@@ -1,0 +1,28 @@
+﻿# Use the official .NET SDK image to build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR ./
+
+# Copy the solution file and all csproj files first (to leverage Docker cache)
+COPY ["DrawTogether.sln", "./"]
+COPY ["Directory.Build.props", "./"]
+COPY ["Directory.Packages.props", "./"]
+COPY ["nuget.config", "./"]
+COPY ["global.json", "./"]
+
+# Copy all source
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+# Publish the main application (DrawTogether) in Release mode
+WORKDIR ./src/DrawTogether
+RUN dotnet publish -c Release -o /app/out
+
+# Build runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/out ./
+
+# Expose whichever port your service listens on (e.g., 80)
+EXPOSE 80
+
+ENTRYPOINT ["dotnet", "DrawTogether.dll"]
