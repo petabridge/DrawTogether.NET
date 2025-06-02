@@ -77,14 +77,22 @@ public static class AkkaConfiguration
 
             builder
                 .WithClustering(clusterOptions)
-                .WithAkkaManagement(port: settings.AkkaManagementOptions.Port)
+                .WithAkkaManagement(setup =>
+                {
+                    setup.Http.HostName = settings.RemoteOptions.PublicHostName?.ToLower() ?? "localhost";
+                    setup.Http.Port = settings.AkkaManagementOptions.Port;
+                    setup.Http.BindHostName = "0.0.0.0";
+                    setup.Http.BindPort = settings.AkkaManagementOptions.Port;
+                })
                 .WithClusterBootstrap(options =>
                 {
                     options.ContactPointDiscovery.ServiceName = settings.AkkaManagementOptions.ServiceName;
                     options.ContactPointDiscovery.PortName = settings.AkkaManagementOptions.PortName;
                     options.ContactPointDiscovery.RequiredContactPointsNr = settings.AkkaManagementOptions.RequiredContactPointsNr;
                     options.ContactPointDiscovery.ContactWithAllContactPoints = true;
-                });
+                    
+                    options.ContactPoint.FilterOnFallbackPort = settings.AkkaManagementOptions.FilterOnFallbackPort;
+                }, autoStart: true);
 
             switch (settings.AkkaManagementOptions.DiscoveryMethod)
             {
@@ -101,11 +109,15 @@ public static class AkkaConfiguration
                     if (connectionString is null)
                         throw new Exception("AkkaManagement table storage connection string [AkkaManagementAzure] is missing");
                     
-                    builder.WithAzureDiscovery(options =>
-                    {
-                        options.ServiceName = settings.AkkaManagementOptions.ServiceName;
-                        options.ConnectionString = connectionString;
-                    });
+                    builder
+                        .WithAzureDiscovery(options =>
+                        {
+                            options.ServiceName = settings.AkkaManagementOptions.ServiceName;
+                            options.ConnectionString = connectionString;
+                            options.HostName = settings.RemoteOptions.PublicHostName?.ToLower() ?? "localhost";
+                            options.Port = settings.AkkaManagementOptions.Port;
+                        })
+                        .AddHocon(AzureDiscovery.DefaultConfiguration(), HoconAddMode.Append);
                     break;
                 }
                 case DiscoveryMethod.Config:
