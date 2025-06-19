@@ -7,7 +7,7 @@ public class AkkaManagementOptions
 {
     public bool Enabled { get; set; } = false;
     public string Hostname { get; set; } = Dns.GetHostName();
-    public int Port { get; set; }
+    public int Port { get; set; } = 8558;
     public string PortName { get; set; } = "management";
 
     public string ServiceName { get; set; } = "drawtogether";
@@ -20,6 +20,8 @@ public class AkkaManagementOptions
     public int RequiredContactPointsNr { get; set; } = 3;
 
     public DiscoveryMethod DiscoveryMethod { get; set; } = DiscoveryMethod.Config;
+    
+    public bool FilterOnFallbackPort { get; set; } = true;
 }
 
 /// <summary>

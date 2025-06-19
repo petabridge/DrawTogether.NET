@@ -67,11 +67,14 @@ builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true
 builder.Services.ConfigureAkka(builder.Configuration, 
     (configurationBuilder, provider) =>
     {
-        configurationBuilder.AddPetabridgeCmd(cmd =>
-        {
-            cmd.RegisterCommandPalette(ClusterCommands.Instance);
-            cmd.RegisterCommandPalette(ClusterShardingCommands.Instance);
-        });
+        var options = provider.GetRequiredService<AkkaSettings>();
+        configurationBuilder.AddPetabridgeCmd(
+            options: options.PbmOptions,
+            hostConfiguration: cmd =>
+            {
+                cmd.RegisterCommandPalette(ClusterCommands.Instance);
+                cmd.RegisterCommandPalette(ClusterShardingCommands.Instance);
+            });
     });
 
 builder.Services.AddDrawTogetherOtel();

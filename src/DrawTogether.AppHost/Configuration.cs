@@ -23,4 +23,6 @@ public class DrawTogetherConfiguration
     /// Only relevant when <see cref="UseAkkaManagement"/> is enabled.
     /// </summary>
     public int Replicas { get; set; } = 1;
+
+    public DeployEnvironment DeployEnvironment { get; set; } = DeployEnvironment.Local;
 }

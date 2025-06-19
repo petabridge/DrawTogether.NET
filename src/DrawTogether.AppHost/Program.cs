@@ -1,15 +1,10 @@
-using Aspire.Hosting.Azure;
 using DrawTogether.AppHost;
 using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-
 var drawTogetherAspireConfig = builder.Configuration.GetSection("DrawTogether")
     .Get<DrawTogetherConfiguration>() ?? new DrawTogetherConfiguration();
-
-builder.AddDockerComposePublisher()
-    .AddKubernetesPublisher();
 
 // Adding a default password for ease of use - we can get rid of this but for a quick "git clone and run" it makes sense
 // have to add this when using data volumes otherwise Aspire will brick itself
@@ -29,31 +24,42 @@ if (drawTogetherAspireConfig.UseVolumes)
 
 var db = sqlServer.AddDatabase("DrawTogetherDb");
 
-var tableStorage = builder.ConfigureAkkaManagementStorage(drawTogetherAspireConfig);
-
 var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService>("MigrationService")
     .WaitFor(db)
     .WithReference(db);
 
-var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
-    .WithReference(db, "DefaultConnection")
-    .WaitForCompletion(migrationService)
-    .WithEndpoint("pbm", annotation =>
+if (drawTogetherAspireConfig.DeployEnvironment == DeployEnvironment.Docker)
+{
+    var drawTogether = builder.AddDockerfile("DrawTogether-1", "../../", "./src/DrawTogether/DockerFile")
+        .WithImage("draw-together", "latest")
+        .WithReference(db, "DefaultConnection")
+        .ConfigureAkkaManagementForApp(drawTogetherAspireConfig)
+        .WaitForCompletion(migrationService);
+
+    foreach (var index in Enumerable.Range(2, drawTogetherAspireConfig.Replicas - 1))
     {
-        annotation.Port = 9110;
-        
-        // not mean to be external, meant to be invoked via the pbm-sidecar
-        annotation.IsExternal = false;
-        annotation.IsProxied = false;
-    });
+        builder.AddContainer($"DrawTogether-{index}", "draw-together")
+            .WithReference(db, "DefaultConnection")
+            .ConfigureAkkaManagementForApp(drawTogetherAspireConfig)
+            .WaitFor(drawTogether);
+    }
+    
+    // https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
+    var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")
+        .WaitFor(drawTogether);
+}
+else
+{
+    var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
+        .WithReplicas(drawTogetherAspireConfig.Replicas)
+        .WithReference(db, "DefaultConnection")
+        .WaitForCompletion(migrationService)
+        .ConfigureAkkaManagementForApp(drawTogetherAspireConfig);
 
-// enable Akka.Management, if necessary
-drawTogether.ConfigureAkkaManagementForApp(drawTogetherAspireConfig);
-
-// https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
-var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")
-    .WaitFor(drawTogether);
-
+    // https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
+    var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")
+        .WaitFor(drawTogether);
+}
 
 builder
     .Build()

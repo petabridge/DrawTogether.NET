@@ -5,7 +5,7 @@
     <AkkaHostingVersion>1.5.40</AkkaHostingVersion>
     <AkkaManagementVersion>1.5.37</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.4</PetabridgeCmdVersion>
-    <AspireVersion>9.2.1</AspireVersion>
+    <AspireVersion>9.3.0</AspireVersion>
     <PlaywrightVersion>1.52.0</PlaywrightVersion>
   </PropertyGroup>
   <!-- Akka.NET Package Versions -->
@@ -20,8 +20,8 @@
     <PackageVersion Include="Akka.Streams" Version="$(AkkaVersion)" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="$(AkkaVersion)" />
     <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="$(AspireVersion)" />
-    <PackageVersion Include="Aspire.Hosting.Docker" Version="9.2.1-preview.1.25222.1" />
-    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="9.2.1-preview.1.25222.1" />
+    <PackageVersion Include="Aspire.Hosting.Docker" Version="9.3.0-preview.1.25265.20" />
+    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="9.3.0-preview.1.25265.20" />
     <PackageVersion Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
