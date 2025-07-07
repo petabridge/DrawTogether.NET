@@ -24,7 +24,7 @@ public class StrokeContinuityStage : GraphStage<
 {
     private readonly TimeSpan _userInactivityTimeout;
     private const string UserInactivityTimeout = "user-inactivity-timeout";
-    private readonly TimeSpan _strokeDisconnectTimeout = TimeSpan.FromSeconds(1);
+    private readonly TimeSpan _strokeDisconnectTimeout = TimeSpan.FromMilliseconds(200);
 
     // Shape definition for this stage
     public override FlowShape<ImmutableList<LocalPaintProtocol.IPaintSessionMessage>, IEnumerable<ConnectedStroke>>
