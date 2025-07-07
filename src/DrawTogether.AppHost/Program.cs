@@ -28,38 +28,15 @@ var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService
     .WaitFor(db)
     .WithReference(db);
 
-if (drawTogetherAspireConfig.DeployEnvironment == DeployEnvironment.Docker)
-{
-    var drawTogether = builder.AddDockerfile("DrawTogether-1", "../../", "./src/DrawTogether/DockerFile")
-        .WithImage("draw-together", "latest")
-        .WithReference(db, "DefaultConnection")
-        .ConfigureAkkaManagementForApp(drawTogetherAspireConfig)
-        .WaitForCompletion(migrationService);
+var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
+    .WithReplicas(drawTogetherAspireConfig.Replicas)
+    .WithReference(db, "DefaultConnection")
+    .WaitForCompletion(migrationService)
+    .ConfigureAkkaManagementForApp(drawTogetherAspireConfig);
 
-    foreach (var index in Enumerable.Range(2, drawTogetherAspireConfig.Replicas - 1))
-    {
-        builder.AddContainer($"DrawTogether-{index}", "draw-together")
-            .WithReference(db, "DefaultConnection")
-            .ConfigureAkkaManagementForApp(drawTogetherAspireConfig)
-            .WaitFor(drawTogether);
-    }
-    
-    // https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
-    var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")
-        .WaitFor(drawTogether);
-}
-else
-{
-    var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
-        .WithReplicas(drawTogetherAspireConfig.Replicas)
-        .WithReference(db, "DefaultConnection")
-        .WaitForCompletion(migrationService)
-        .ConfigureAkkaManagementForApp(drawTogetherAspireConfig);
-
-    // https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
-    var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")
-        .WaitFor(drawTogether);
-}
+// https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
+var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")
+    .WaitFor(drawTogether);
 
 builder
     .Build()

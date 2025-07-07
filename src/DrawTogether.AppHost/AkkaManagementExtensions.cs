@@ -31,6 +31,7 @@ public static class AkkaManagementExtensions
             .WithEnvironment("AkkaSettings__RemoteOptions__PublicHostName", "localhost")
             .WithEnvironment("AkkaSettings__AkkaManagementOptions__Enabled", "true")
             .WithEnvironment("AkkaSettings__AkkaManagementOptions__DiscoveryMethod", "AzureTableStorage")
+            .WithEnvironment("AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr", config.Replicas.ToString())
             .WithEnvironment("AkkaSettings__AkkaManagementOptions__FilterOnFallbackPort", "false");
 
         return appBuilder;
@@ -68,7 +69,7 @@ public static class AkkaManagementExtensions
         appBuilder
             .WithEnvironment("AkkaSettings__AkkaManagementOptions__Enabled", "true")
             .WithEnvironment("AkkaSettings__AkkaManagementOptions__DiscoveryMethod", "AzureTableStorage")
-            .WithEnvironment("AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr", "1")
+            .WithEnvironment("AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr", config.Replicas.ToString())
             .WithEnvironment("AkkaSettings__AkkaManagementOptions__FilterOnFallbackPort", "false");
 
         return appBuilder;

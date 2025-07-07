@@ -13,7 +13,8 @@ public class DrawTogetherFixture : IAsyncLifetime
     {
         var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.DrawTogether_AppHost>([
             "DrawTogether:UseVolumes=false",
-            "DrawTogether:UseAkkaManagement=false"
+            "DrawTogether:UseAkkaManagement=false",
+            "DrawTogether:Replicas=1"
         ]);
 
         _app = await builder.BuildAsync();

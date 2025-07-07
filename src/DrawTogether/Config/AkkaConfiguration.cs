@@ -90,6 +90,7 @@ public static class AkkaConfiguration
                     options.ContactPointDiscovery.PortName = settings.AkkaManagementOptions.PortName;
                     options.ContactPointDiscovery.RequiredContactPointsNr = settings.AkkaManagementOptions.RequiredContactPointsNr;
                     options.ContactPointDiscovery.ContactWithAllContactPoints = true;
+                    options.ContactPointDiscovery.StableMargin = TimeSpan.FromSeconds(5);
                     
                     options.ContactPoint.FilterOnFallbackPort = settings.AkkaManagementOptions.FilterOnFallbackPort;
                 }, autoStart: true);
