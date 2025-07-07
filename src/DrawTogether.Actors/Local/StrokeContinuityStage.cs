@@ -161,7 +161,7 @@ public class StrokeContinuityStage : GraphStage<
                         // something unusual happened (e.g., user clicked somewhere else) - no need for continuity
                         var distance = CalculateDistance(activeInfo.LastPoint, pointsToAdd[0]);
 
-                        if (distance <= 500.0) // Threshold for what we consider "continuous"
+                        if (distance <= 50.0) // Threshold for what we consider "continuous"
                         {
                             // For perfect continuity, replace the first point with the last point from previous stroke
                             // This ensures there's not even a sub-pixel gap between strokes
