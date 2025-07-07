@@ -1,4 +1,6 @@
-﻿using Akka.Cluster.Hosting;
+﻿using System.Diagnostics;
+using Akka.Cluster.Hosting;
+using Akka.Discovery.Azure;
 using Akka.Discovery.Config.Hosting;
 using Akka.Discovery.KubernetesApi;
 using Akka.Hosting;
@@ -62,6 +64,7 @@ public static class AkkaConfiguration
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
         
         builder
             .WithRemoting(settings.RemoteOptions);
@@ -74,10 +77,22 @@ public static class AkkaConfiguration
 
             builder
                 .WithClustering(clusterOptions)
-                .WithAkkaManagement(port: settings.AkkaManagementOptions.Port)
-                .WithClusterBootstrap(serviceName: settings.AkkaManagementOptions.ServiceName,
-                    portName: settings.AkkaManagementOptions.PortName,
-                    requiredContactPoints: settings.AkkaManagementOptions.RequiredContactPointsNr);
+                .WithAkkaManagement(setup =>
+                {
+                    setup.Http.HostName = settings.RemoteOptions.PublicHostName?.ToLower() ?? "localhost";
+                    setup.Http.Port = settings.AkkaManagementOptions.Port;
+                    setup.Http.BindHostName = "0.0.0.0";
+                    setup.Http.BindPort = settings.AkkaManagementOptions.Port;
+                })
+                .WithClusterBootstrap(options =>
+                {
+                    options.ContactPointDiscovery.ServiceName = settings.AkkaManagementOptions.ServiceName;
+                    options.ContactPointDiscovery.PortName = settings.AkkaManagementOptions.PortName;
+                    options.ContactPointDiscovery.RequiredContactPointsNr = settings.AkkaManagementOptions.RequiredContactPointsNr;
+                    options.ContactPointDiscovery.ContactWithAllContactPoints = true;
+                    
+                    options.ContactPoint.FilterOnFallbackPort = settings.AkkaManagementOptions.FilterOnFallbackPort;
+                }, autoStart: true);
 
             switch (settings.AkkaManagementOptions.DiscoveryMethod)
             {
@@ -90,16 +105,19 @@ public static class AkkaConfiguration
                     break;
                 case DiscoveryMethod.AzureTableStorage:
                 {
-                    // var connectionStringName = configuration.GetSection("AzureStorageSettings")
-                    //     .Get<AzureStorageSettings>()?.ConnectionStringName;
-                    // Debug.Assert(connectionStringName != null, nameof(connectionStringName) + " != null");
-                    // var connectionString = configuration.GetConnectionString(connectionStringName);
-                    //
-                    // builder.WithAzureDiscovery(options =>
-                    // {
-                    //     options.ServiceName = settings.AkkaManagementOptions.ServiceName;
-                    //     options.ConnectionString = connectionString;
-                    // });
+                    var connectionString = configuration.GetConnectionString("AkkaManagementAzure");
+                    if (connectionString is null)
+                        throw new Exception("AkkaManagement table storage connection string [AkkaManagementAzure] is missing");
+                    
+                    builder
+                        .WithAzureDiscovery(options =>
+                        {
+                            options.ServiceName = settings.AkkaManagementOptions.ServiceName;
+                            options.ConnectionString = connectionString;
+                            options.HostName = settings.RemoteOptions.PublicHostName?.ToLower() ?? "localhost";
+                            options.Port = settings.AkkaManagementOptions.Port;
+                        })
+                        .AddHocon(AzureDiscovery.DefaultConfiguration(), HoconAddMode.Append);
                     break;
                 }
                 case DiscoveryMethod.Config:
@@ -110,10 +128,10 @@ public static class AkkaConfiguration
                             options.Services.Add(new Service
                             {
                                 Name = settings.AkkaManagementOptions.ServiceName,
-                                Endpoints = new[]
-                                {
-                                    $"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}",
-                                }
+                                Endpoints =
+                                [
+                                    $"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}"
+                                ]
                             });
                         });
                     break;

@@ -20,6 +20,8 @@ public class AkkaManagementOptions
     public int RequiredContactPointsNr { get; set; } = 3;
 
     public DiscoveryMethod DiscoveryMethod { get; set; } = DiscoveryMethod.Config;
+    
+    public bool FilterOnFallbackPort { get; set; } = true;
 }
 
 /// <summary>
