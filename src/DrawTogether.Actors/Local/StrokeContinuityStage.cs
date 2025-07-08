@@ -25,6 +25,7 @@ public class StrokeContinuityStage : GraphStage<
     private readonly TimeSpan _userInactivityTimeout;
     private const string UserInactivityTimeout = "user-inactivity-timeout";
     private readonly TimeSpan _strokeDisconnectTimeout = TimeSpan.FromMilliseconds(200);
+    private const double StrokeDisconnectDistance = 250.0; // pixels
 
     // Shape definition for this stage
     public override FlowShape<ImmutableList<LocalPaintProtocol.IPaintSessionMessage>, IEnumerable<ConnectedStroke>>
@@ -161,7 +162,7 @@ public class StrokeContinuityStage : GraphStage<
                         // something unusual happened (e.g., user clicked somewhere else) - no need for continuity
                         var distance = CalculateDistance(activeInfo.LastPoint, pointsToAdd[0]);
 
-                        if (distance <= 50.0) // Threshold for what we consider "continuous"
+                        if (distance <= StrokeDisconnectDistance) // Threshold for what we consider "continuous"
                         {
                             // For perfect continuity, replace the first point with the last point from previous stroke
                             // This ensures there's not even a sub-pixel gap between strokes
