@@ -40,10 +40,22 @@
             
             @foreach (var stroke in Strokes)
             {
-                <Curve 
-                    Points="@stroke.Value.Points" 
-                    Stroke="@stroke.Value.StrokeColor.HexCodeOrColorName" 
-                    StrokeWidth="@stroke.Value.StrokeWidth.Value"/>
+                @if (stroke.Value.Points.Count == 1)
+                {
+                    <!-- Render single-point strokes as circles (dots) -->
+                    <circle cx="@stroke.Value.Points[0].X" 
+                            cy="@stroke.Value.Points[0].Y" 
+                            r="@(stroke.Value.StrokeWidth.Value / 2.0)" 
+                            fill="@stroke.Value.StrokeColor.HexCodeOrColorName" />
+                }
+                else
+                {
+                    <!-- Render multi-point strokes as curves -->
+                    <Curve 
+                        Points="@stroke.Value.Points" 
+                        Stroke="@stroke.Value.StrokeColor.HexCodeOrColorName" 
+                        StrokeWidth="@stroke.Value.StrokeWidth.Value"/>
+                }
             }
         </g>
     </svg>
