@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,7 @@ using DrawTogether.Components.Account;
 using DrawTogether.Config;
 using DrawTogether.Data;
 using DrawTogether.Email;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.ResponseCompression;
 using MudBlazor.Services;
 using Petabridge.Cmd.Cluster;
@@ -24,6 +26,8 @@ builder.Configuration.AddJsonFile("appsettings.json")
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddHealthChecks();
 
 // If you also want WebAssembly SSR, include this line:
 builder.Services.AddServerSideBlazor();
@@ -98,6 +102,33 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseResponseCompression();
 app.UseAntiforgery();
+
+app.MapHealthChecks("/healthz", new HealthCheckOptions
+{
+    Predicate = _ => true, // include all checks
+    ResponseWriter = async (ctx, report) =>
+    {
+        ctx.Response.ContentType = "application/json; charset=utf-8";
+
+        var payload = new
+        {
+            status = report.Status.ToString(),
+            totalDuration = report.TotalDuration,
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                duration = e.Value.Duration,
+                description = e.Value.Description,
+                tags = e.Value.Tags,
+                data = e.Value.Data   // anything you added via context.Registration
+            })
+        };
+
+        await ctx.Response.WriteAsync(JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
+        // or in .NET 8+: await ctx.Response.WriteAsJsonAsync(payload);
+    }
+});
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
