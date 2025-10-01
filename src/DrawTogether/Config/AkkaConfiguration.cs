@@ -33,6 +33,8 @@ public static class AkkaConfiguration
         {
             builder.ConfigureNetwork(provider)
                 .AddDrawingProtocolSerializer()
+                .WithAkkaClusterReadinessCheck()
+                .WithActorSystemLivenessCheck()
                 .WithSqlPersistence(
                     connectionString: connectionString,
                     providerName: ProviderName.SqlServer2022,
@@ -40,7 +42,10 @@ public static class AkkaConfiguration
                     tagStorageMode: TagMode.TagTable,
                     deleteCompatibilityMode: true,
                     useWriterUuidColumn: true,
-                    autoInitialize: true)
+                    autoInitialize: true, journalBuilder: journalBuilder =>
+                    {
+                        journalBuilder.WithHealthCheck();
+                    })
                 .AddAllDrawingsIndexActor(roleName)
                 .AddDrawingSessionActor(roleName)
                 .AddLocalDrawingSessionActor();
