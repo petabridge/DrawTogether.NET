@@ -44,7 +44,10 @@ public static class AkkaConfiguration
                     useWriterUuidColumn: true,
                     autoInitialize: true, journalBuilder: journalBuilder =>
                     {
-                        journalBuilder.WithHealthCheck();
+                        journalBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.Journal[default]");
+                    }, snapshotBuilder: snapshotBuilder =>
+                    {
+                        snapshotBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.SnapshotStore[default]");   
                     })
                 .AddAllDrawingsIndexActor(roleName)
                 .AddDrawingSessionActor(roleName)
