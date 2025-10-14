@@ -5,8 +5,9 @@
     <AkkaHostingVersion>1.5.53</AkkaHostingVersion>
     <AkkaManagementVersion>1.5.52</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.5</PetabridgeCmdVersion>
-    <AspireVersion>9.3.0</AspireVersion>
+    <AspireVersion>9.5.1</AspireVersion>
     <PlaywrightVersion>1.52.0</PlaywrightVersion>
+    <MsftVersion>9.0.9</MsftVersion>
   </PropertyGroup>
   <!-- Akka.NET Package Versions -->
   <ItemGroup>
@@ -20,28 +21,28 @@
     <PackageVersion Include="Akka.Streams" Version="$(AkkaVersion)" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="$(AkkaVersion)" />
     <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="$(AspireVersion)" />
-    <PackageVersion Include="Aspire.Hosting.Docker" Version="9.3.0-preview.1.25265.20" />
-    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="9.3.0-preview.1.25265.20" />
+    <PackageVersion Include="Aspire.Hosting.Docker" Version="9.5.1-preview.1.25502.11" />
+    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="9.5.1-preview.1.25502.11" />
     <PackageVersion Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="$(MsftVersion)" />
     <PackageVersion Include="MudBlazor" Version="7.15.0" />
     <PackageVersion Include="Petabridge.Cmd.Cluster" Version="$(PetabridgeCmdVersion)" />
     <PackageVersion Include="Petabridge.Cmd.Cluster.Sharding" Version="$(PetabridgeCmdVersion)" />
   </ItemGroup>
   <!-- ASP.NET Package Versions -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.4" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4">
+    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="$(MsftVersion)" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="$(MsftVersion)" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="$(MsftVersion)">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.4" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="$(MsftVersion)" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="$(MsftVersion)" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="$(MsftVersion)" />
   </ItemGroup>
   <!-- Aspire Package Versions -->
   <ItemGroup>
