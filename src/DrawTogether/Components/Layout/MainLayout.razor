@@ -1,7 +1,10 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
 @using Microsoft.AspNetCore.Components.Authorization
+@using DrawTogether.Config
+@using Microsoft.Extensions.Options
 @inject NavigationManager NavigationManager
+@inject IOptions<DrawTogetherSettings> Settings
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -46,26 +49,45 @@
                 </form>
             </Authorized>
             <NotAuthorized>
-                <MudButton 
-                    StartIcon="@Icons.Material.Filled.Home" 
-                    Color="Color.Inherit" 
-                    Href="/" 
-                    Class="ml-2">Home</MudButton>
-                <MudButton 
-                    StartIcon="@Icons.Material.Filled.Lock" 
-                    Color="Color.Inherit" 
-                    Href="auth" 
-                    Class="ml-2">Auth Required</MudButton>
-                <MudButton 
-                    StartIcon="@Icons.Material.Filled.PersonAdd" 
-                    Color="Color.Inherit" 
-                    Href="Account/Register" 
-                    Class="ml-2">Register</MudButton>
-                <MudButton 
-                    StartIcon="@Icons.Material.Filled.Login" 
-                    Color="Color.Inherit" 
-                    Href="Account/Login" 
-                    Class="ml-2">Login</MudButton>
+                @if (Settings.Value.AllowAnonymousAccess)
+                {
+                    @* Anonymous mode: Show anonymous indicator and New Drawing button *@
+                    <MudChip T="string" Icon="@Icons.Material.Filled.Public" Color="Color.Info" Size="Size.Small" Class="ml-2">Anonymous Mode</MudChip>
+                    <MudButton
+                        StartIcon="@Icons.Material.Filled.Home"
+                        Color="Color.Inherit"
+                        Href="/"
+                        Class="ml-2">Home</MudButton>
+                    <MudButton
+                        StartIcon="@Icons.Material.Filled.Add"
+                        Color="Color.Inherit"
+                        Href="NewPaint"
+                        Class="ml-2">New Drawing</MudButton>
+                }
+                else
+                {
+                    @* Auth required mode: Show auth-related buttons *@
+                    <MudButton
+                        StartIcon="@Icons.Material.Filled.Home"
+                        Color="Color.Inherit"
+                        Href="/"
+                        Class="ml-2">Home</MudButton>
+                    <MudButton
+                        StartIcon="@Icons.Material.Filled.Lock"
+                        Color="Color.Inherit"
+                        Href="auth"
+                        Class="ml-2">Auth Required</MudButton>
+                    <MudButton
+                        StartIcon="@Icons.Material.Filled.PersonAdd"
+                        Color="Color.Inherit"
+                        Href="Account/Register"
+                        Class="ml-2">Register</MudButton>
+                    <MudButton
+                        StartIcon="@Icons.Material.Filled.Login"
+                        Color="Color.Inherit"
+                        Href="Account/Login"
+                        Class="ml-2">Login</MudButton>
+                }
             </NotAuthorized>
         </AuthorizeView>
         

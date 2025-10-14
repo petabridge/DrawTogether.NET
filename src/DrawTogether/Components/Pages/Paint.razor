@@ -109,28 +109,39 @@
 
     private ClaimsPrincipal? _user;
     private UserId? _currentUserId;
+    private bool _hasInitialized = false;
 
     protected override async Task OnInitializedAsync()
     {
         var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
         _user = authstate.User;
 
-        // Check if user is authenticated, otherwise use anonymous user
+        // For authenticated users, we can get the ID immediately (no JS required)
         if (_user.Identity?.IsAuthenticated == true)
         {
             var userId = _user.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? throw new InvalidOperationException("User authenticated but no NameIdentifier claim found");
             _currentUserId = new UserId(userId);
         }
-        else
+        // For anonymous users, we need to wait for OnAfterRenderAsync to call JS interop
+
+        DrawingSessionId = new DrawingSessionId(SessionId);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _hasInitialized)
+            return;
+
+        _hasInitialized = true;
+
+        // Get anonymous user ID if not authenticated (requires JS interop)
+        if (_currentUserId is null)
         {
-            // Use anonymous user service to get/create anonymous user ID
             _currentUserId = await AnonymousUserService.GetOrCreateAnonymousUserIdAsync();
         }
 
-        DrawingSessionId = new DrawingSessionId(SessionId);
-
-
+        // Now that we have a user ID (authenticated or anonymous), initialize the drawing session
         using var startupCts = new CancellationTokenSource(5000);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(startupCts.Token, _shutdownCts.Token);
         var localActor = await LocalDrawingSessionActor.GetAsync(linkedCts.Token);
@@ -139,6 +150,7 @@
 
         async Task DoStartupTasks(CancellationToken ct)
         {
+            Debug.Assert(DrawingSessionId != null, nameof(DrawingSessionId) + " != null");
             var localHandleTask = localActor.Ask<IActorRef>(new LocalDrawingSessionActor.GetLocalActorHandle(DrawingSessionId), cancellationToken: ct);
             var currentStateTask = localActor.Ask<DrawingSessionState>(
                 new DrawingSessionQueries.GetDrawingSessionState(DrawingSessionId), cancellationToken: ct);
@@ -170,6 +182,9 @@
             // start the event loop
             _ = RunDataPump();
         }
+
+        // Trigger UI update now that we're fully initialized
+        await InvokeAsync(StateHasChanged);
     }
     
     async Task RunDataPump()
