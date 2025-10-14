@@ -1,9 +1,9 @@
 <Project>
   <PropertyGroup Label="SharedVersions">
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AkkaVersion>1.5.51</AkkaVersion>
-    <AkkaHostingVersion>1.5.51.1</AkkaHostingVersion>
-    <AkkaManagementVersion>1.5.50</AkkaManagementVersion>
+    <AkkaVersion>1.5.53</AkkaVersion>
+    <AkkaHostingVersion>1.5.53</AkkaHostingVersion>
+    <AkkaManagementVersion>1.5.52</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.5</PetabridgeCmdVersion>
     <AspireVersion>9.3.0</AspireVersion>
     <PlaywrightVersion>1.52.0</PlaywrightVersion>
