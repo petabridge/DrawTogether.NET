@@ -7,6 +7,9 @@ using DrawTogether.Components.Account;
 using DrawTogether.Config;
 using DrawTogether.Data;
 using DrawTogether.Email;
+using DrawTogether.Services;
+using DrawTogether.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.ResponseCompression;
 using MudBlazor.Services;
@@ -40,12 +43,23 @@ builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuth
 builder.Services.AddDrawTogetherSettings(builder.Configuration);
 builder.Services.AddEmailServices<ApplicationUser>(builder.Configuration); // add email services
 
+// Add anonymous user service
+builder.Services.AddScoped<IAnonymousUserService, AnonymousUserService>();
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
     })
     .AddIdentityCookies();
+
+// Add authorization with custom policy for drawing access
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy("DrawingAccess", policy =>
+        policy.Requirements.Add(new DrawingAccessRequirement()));
+});
+builder.Services.AddSingleton<IAuthorizationHandler, DrawingAccessHandler>();
 
 builder.AddSqlServerDbContext<ApplicationDbContext>("DefaultConnection");
 

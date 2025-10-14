@@ -15,13 +15,15 @@
 @using DrawingColor = DrawTogether.Entities.Drawings.Color
 @using MudBlazor
 @using Microsoft.Extensions.Logging
+@using DrawTogether.Services
 @inject NavigationManager NavigationManager;
 @implements IAsyncDisposable;
 @inject AuthenticationStateProvider GetAuthenticationStateAsync
 @inject IRequiredActor<LocalDrawingSessionActor> LocalDrawingSessionActor;
 @inject ILogger<Paint> Logger
 @inject IJSRuntime JSRuntime
-@attribute [Authorize]
+@inject IAnonymousUserService AnonymousUserService
+@attribute [Authorize(Policy = "DrawingAccess")]
 
 <div class="d-flex flex-column h-100" style="height: 100vh; overflow: hidden;">
     <!-- Compact Header with dropdown -->
@@ -112,7 +114,20 @@
     {
         var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
         _user = authstate.User;
-        _currentUserId = new UserId(_user.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User not authenticated"));
+
+        // Check if user is authenticated, otherwise use anonymous user
+        if (_user.Identity?.IsAuthenticated == true)
+        {
+            var userId = _user.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? throw new InvalidOperationException("User authenticated but no NameIdentifier claim found");
+            _currentUserId = new UserId(userId);
+        }
+        else
+        {
+            // Use anonymous user service to get/create anonymous user ID
+            _currentUserId = await AnonymousUserService.GetOrCreateAnonymousUserIdAsync();
+        }
+
         DrawingSessionId = new DrawingSessionId(SessionId);
 
 
