@@ -1,6 +1,9 @@
 ﻿@implements IDisposable
 @using MudBlazor
+@using DrawTogether.Config
+@using Microsoft.Extensions.Options
 @inject NavigationManager NavigationManager
+@inject IOptions<DrawTogetherSettings> Settings
 
 <MudNavMenu Color="Color.Inherit" Class="py-2">
     <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
@@ -13,6 +16,11 @@
             <MudNavLink OnClick="Logout" Icon="@Icons.Material.Filled.ExitToApp">Logout</MudNavLink>
         </Authorized>
         <NotAuthorized>
+            @* Show "New Drawing" for anonymous users if anonymous access is enabled *@
+            @if (Settings.Value.AllowAnonymousAccess)
+            {
+                <MudNavLink Href="NewPaint" Icon="@Icons.Material.Filled.Add">New Drawing</MudNavLink>
+            }
             <MudNavLink Href="Account/Register" Icon="@Icons.Material.Filled.PersonAdd">Register</MudNavLink>
             <MudNavLink Href="Account/Login" Icon="@Icons.Material.Filled.Login">Login</MudNavLink>
         </NotAuthorized>

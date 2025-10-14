@@ -8,6 +8,13 @@ public class DrawTogetherSettings
     /// We disable this using the default repo settings so users can run the app locally right away
     /// </summary>
     public bool RequireEmailValidation { get; set; }
+
+    /// <summary>
+    /// When true, users can access drawing sessions without creating an account.
+    /// Anonymous users are assigned temporary IDs stored in browser localStorage.
+    /// Default is true to allow immediate access.
+    /// </summary>
+    public bool AllowAnonymousAccess { get; set; } = true;
 }
 
 public sealed class DrawTogetherSettingsValidator : IValidateOptions<DrawTogetherSettings>
