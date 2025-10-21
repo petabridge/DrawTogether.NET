@@ -73,7 +73,13 @@ public static class AkkaConfiguration
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-        
+
+        // Apply TLS configuration to RemoteOptions if enabled
+        if (settings.TlsSettings is { Enabled: true })
+        {
+            ConfigureRemoteOptionsWithTls(settings);
+        }
+
         builder
             .WithRemoting(settings.RemoteOptions);
 
@@ -155,5 +161,32 @@ public static class AkkaConfiguration
         }
 
         return builder;
+    }
+
+    private static void ConfigureRemoteOptionsWithTls(AkkaSettings settings)
+    {
+        var tlsSettings = settings.TlsSettings!;
+        var remoteOptions = settings.RemoteOptions;
+
+        // Load the certificate
+        var certificate = tlsSettings.LoadCertificate();
+        if (certificate is null)
+            throw new InvalidOperationException("TLS is enabled but no certificate could be loaded");
+
+        // Configure SSL through RemoteOptions
+        remoteOptions.EnableSsl = true;
+        remoteOptions.Ssl = new SslOptions
+        {
+            X509Certificate = certificate,
+            SuppressValidation = !tlsSettings.ValidateCertificates
+        };
+
+        // Update seed nodes to use akka.ssl.tcp:// protocol if present
+        if (settings.ClusterOptions.SeedNodes?.Length > 0)
+        {
+            settings.ClusterOptions.SeedNodes = settings.ClusterOptions.SeedNodes
+                .Select(node => node.Replace("akka.tcp://", "akka.ssl.tcp://"))
+                .ToArray();
+        }
     }
 }
