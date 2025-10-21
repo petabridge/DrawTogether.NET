@@ -109,6 +109,15 @@ spec:
           value: "service.namespace=$(NAMESPACE),service.instance.id=$(POD_NAME)"
         - name: OTEL_SERVICE_NAME
           value: "drawtogether"
+        # TLS Configuration for Akka.Remote
+        - name: AkkaSettings__TlsSettings__Enabled
+          value: "true"
+        - name: AkkaSettings__TlsSettings__CertificatePath
+          value: "/certs/akka-node.pfx"
+        - name: AkkaSettings__TlsSettings__CertificatePassword
+          value: "Test123!"
+        - name: AkkaSettings__TlsSettings__ValidateCertificates
+          value: "false"
         livenessProbe:
           httpGet:
             path: /healthz/live
@@ -135,3 +144,11 @@ spec:
           - containerPort: 8080
             protocol: TCP
             name: http
+        volumeMounts:
+        - name: tls-cert
+          mountPath: /certs
+          readOnly: true
+      volumes:
+      - name: tls-cert
+        secret:
+          secretName: akka-tls-cert
