@@ -27,7 +27,7 @@ public static class AkkaConfiguration
         if (connectionString is null)
             throw new Exception("DefaultConnection ConnectionString is missing");
         
-        var roleName = ClusterConstants.DrawStateRoleName;
+        const string roleName = ClusterConstants.DrawStateRoleName;
 
         services.AddAkka(akkaSettings.ActorSystemName, (builder, provider) =>
         {
@@ -87,7 +87,7 @@ public static class AkkaConfiguration
                 .WithClustering(clusterOptions)
                 .WithAkkaManagement(setup =>
                 {
-                    setup.Http.HostName = settings.RemoteOptions.PublicHostName?.ToLower() ?? "localhost";
+                    setup.Http.HostName = settings.AkkaManagementOptions.Hostname?.ToLower();
                     setup.Http.Port = settings.AkkaManagementOptions.Port;
                     setup.Http.BindHostName = "0.0.0.0";
                     setup.Http.BindPort = settings.AkkaManagementOptions.Port;

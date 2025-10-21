@@ -43,6 +43,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: drawtogether
+  namespace: drawtogether
   labels:
     app: drawtogether
 spec:
@@ -62,7 +63,8 @@ spec:
       - name: pbm-sidecar
         image: petabridge/pbm:latest #sidecar
       - name: drawtogether-app
-        image: drawtogether-app:0.2.2
+        image: drawtogether-app:0.2.7
+        imagePullPolicy: IfNotPresent
         env:
         - name: POD_NAME
           valueFrom:
