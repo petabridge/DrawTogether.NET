@@ -70,17 +70,17 @@ This is how to deploy the most recent version of Nginx Ingress on Docker Desktop
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
 ```
 
-Next, you will need to build a local Docker image:
+Next, you will need to build the Docker images for both the application and migration service:
 
+```bash
+dotnet publish --os linux --arch x64 -c Release -t:PublishContainer
 ```
-dotnet publish src/DrawTogether/DrawTogether.csproj --os linux --arch x64 -c Release -p:PublishProfile=DefaultContainer
-```
 
-This will tag a local Docker image with the following labels:
+This will tag local Docker images with the following labels:
 
-* `drawtogether-app:latest`
-* `drawtogether-app:{VERSION}`
+* `drawtogether:latest` and `drawtogether:{VERSION}`
+* `drawtogether-migrationservice:latest` and `drawtogether-migrationservice:{VERSION}`
 
-Update the [`k8s-web-service.yaml`](k8s/services/k8s-web-service.yaml) to use the `drawtogether-app:{VERSION}` label - if you try to use the `drawtogether-app:latest` Kubernetes will attempt to pull the latest image from Docker Hub.
+The K8s manifests in [`k8s/`](k8s/) are configured to use the versioned tags automatically.
 
 Finally, launch everything via the `./k8s/deployAll.cmd` - and DrawTogether should be available at http://drawtogether.localdev.me
