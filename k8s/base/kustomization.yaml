@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - configs/k8s-crd.yaml
   - configs/k8s-rbac.yaml
+  - sql-secret.yaml
   - sql-server.yaml
   - k8s-migrations-job.yaml
   - k8s-web-service.yaml
