@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+    <PropertyGroup>
+        <ContainerRepository>drawtogether-migrationservice</ContainerRepository>
+        <ContainerImageTags>$(VersionPrefix);latest</ContainerImageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
+        <PackageReference Include="Microsoft.Extensions.Hosting"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DrawTogether\DrawTogether.csproj" />
+    </ItemGroup>
+</Project>

@@ -1,0 +1,239 @@
+@using DrawTogether.Entities.Drawings
+@using DrawTogether.Entities.Users
+@using System.Diagnostics
+@using DrawTogether.Entities
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using Color = DrawTogether.Entities.Drawings.Color
+@inject IJSRuntime JsRuntime
+@implements IAsyncDisposable
+
+<div id="@DrawingContainerId" 
+     class="drawing-surface"
+     style="background-color: cornsilk; width: 100%; height: 100%;"
+     @onmousemove="OnMouseMove" 
+     @onmousedown="OnMouseDown" 
+     @onmouseup="OnMouseUp"
+     @ontouchmove="OnTouchMove"
+     @ontouchstart="OnTouchStart"
+     @ontouchend="OnTouchEnd">
+    
+    <svg @ref="SvgElement" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1200 800">
+        <!-- Optional grid for visual testing -->
+        @if (ShowGrid)
+        {
+            <defs>
+                <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+                    <path d="M 100 0 L 0 0 0 100" fill="none" stroke="gray" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+        }
+        <g>
+            <Circle 
+                radius="@CursorSize.Value" 
+                cursorId="@GetUserIdentityName()" 
+                cX="@CurrentX" 
+                cY="@CurrentY" 
+                fillColor="@CurrentColor.HexCodeOrColorName" 
+                borderColor="@CurrentColor.HexCodeOrColorName"/>
+            
+            @foreach (var stroke in Strokes)
+            {
+                @if (stroke.Value.Points.Count == 1)
+                {
+                    <!-- Render single-point strokes as circles (dots) -->
+                    <circle cx="@stroke.Value.Points[0].X" 
+                            cy="@stroke.Value.Points[0].Y" 
+                            r="@(stroke.Value.StrokeWidth.Value / 2.0)" 
+                            fill="@stroke.Value.StrokeColor.HexCodeOrColorName" />
+                }
+                else
+                {
+                    <!-- Render multi-point strokes as curves -->
+                    <Curve 
+                        Points="@stroke.Value.Points" 
+                        Stroke="@stroke.Value.StrokeColor.HexCodeOrColorName" 
+                        StrokeWidth="@stroke.Value.StrokeWidth.Value"/>
+                }
+            }
+        </g>
+    </svg>
+</div>
+
+@code {
+    [Parameter] public required Dictionary<StrokeId, ConnectedStroke> Strokes { get; set; }
+    [Parameter] public required UserId UserId { get; set; }
+    [Parameter] public required Color CurrentColor { get; set; }
+    [Parameter] public required GreaterThanZeroInteger CursorSize { get; set; }
+    [Parameter] public required EventCallback<Point> OnPointAdded { get; set; }
+    [Parameter] public EventCallback OnClearRequested { get; set; }
+    [Parameter] public EventCallback<(double, double)> OnRawCoordinatesChanged { get; set; }
+    [Parameter] public EventCallback OnStrokeCompleted { get; set; }
+    [Parameter] public bool ShowGrid { get; set; } = false;
+    
+    [Parameter] public string DrawingContainerId { get; set; } = "drawing-surface";
+    
+    private ElementReference SvgElement;
+    private double CurrentX { get; set; } = 0;
+    private double CurrentY { get; set; } = 0;
+    
+    private DotNetObjectReference<DrawingSurface>? _objRef;
+    private IJSObjectReference? _jsModule;
+    private bool _jsInitialized = false;
+    
+    // Helper method to get user identity name safely
+    private string GetUserIdentityName()
+    {
+        return UserId?.IdentityName ?? string.Empty;
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try 
+            {
+                _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/drawingInterop.js");
+                _objRef = DotNetObjectReference.Create(this);
+                
+                await _jsModule.InvokeVoidAsync("drawingInterop.initialize", _objRef, DrawingContainerId, SvgElement);
+                _jsInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error initializing drawing JS: {ex.Message}");
+            }
+        }
+    }
+    
+    private async Task<Point> TransformCoordinates(double clientX, double clientY)
+    {
+        // Update raw coordinate tracking
+        await OnRawCoordinatesChanged.InvokeAsync((clientX, clientY));
+        
+        if (!_jsInitialized || _jsModule == null)
+            return new Point(clientX, clientY);
+            
+        try
+        {
+            var coordinates = await _jsModule.InvokeAsync<double[]>("drawingInterop.transformCoordinates", 
+                SvgElement, clientX, clientY);
+                
+            return new Point(coordinates[0], coordinates[1]);
+        }
+        catch (Exception)
+        {
+            // Fallback to direct mapping if JS interop fails
+            return new Point(clientX, clientY);
+        }
+    }
+
+    private async Task OnMouseDown(MouseEventArgs e)
+    {
+        if (e.Buttons == 1)
+        {
+            var transformedPoint = await TransformCoordinates(e.ClientX, e.ClientY);
+            await OnPointAdded.InvokeAsync(transformedPoint);
+        }
+    }
+
+    private async Task OnMouseMove(MouseEventArgs e)
+    {
+        // Update cursor position with transformed coordinates
+        var transformedPoint = await TransformCoordinates(e.ClientX, e.ClientY);
+        CurrentX = transformedPoint.X;
+        CurrentY = transformedPoint.Y;
+        
+        // Always report raw coordinates
+        await OnRawCoordinatesChanged.InvokeAsync((e.ClientX, e.ClientY));
+        
+        if (e.Buttons == 1)
+        {
+            await OnPointAdded.InvokeAsync(transformedPoint);
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task OnMouseUp(MouseEventArgs e)
+    {
+        if (e.Buttons == 0) // Button was released (previously down)
+        {
+            // Notify that the stroke is completed
+            await OnStrokeCompleted.InvokeAsync();
+        }
+    }
+
+    private async Task OnTouchStart(TouchEventArgs e)
+    {
+        if (e.TargetTouches.Length > 0)
+        {
+            var touch = e.TargetTouches[0];
+            
+            // Report raw coordinates
+            await OnRawCoordinatesChanged.InvokeAsync((touch.ClientX, touch.ClientY));
+            
+            var transformedPoint = await TransformCoordinates(touch.ClientX, touch.ClientY);
+            // Update cursor position with transformed coordinates
+            CurrentX = transformedPoint.X;
+            CurrentY = transformedPoint.Y;
+            
+            await OnPointAdded.InvokeAsync(transformedPoint);
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnTouchMove(TouchEventArgs e)
+    {
+        if (e.TargetTouches.Length > 0)
+        {
+            var touch = e.TargetTouches[0];
+            
+            // Report raw coordinates
+            await OnRawCoordinatesChanged.InvokeAsync((touch.ClientX, touch.ClientY));
+            
+            var transformedPoint = await TransformCoordinates(touch.ClientX, touch.ClientY);
+            // Update cursor position with transformed coordinates
+            CurrentX = transformedPoint.X;
+            CurrentY = transformedPoint.Y;
+            
+            await OnPointAdded.InvokeAsync(transformedPoint);
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnTouchEnd(TouchEventArgs e)
+    {
+        // Notify that the stroke is completed when touch ends
+        await OnStrokeCompleted.InvokeAsync();
+    }
+    
+    [JSInvokable]
+    public void UpdateCursorPosition(double x, double y)
+    {
+        CurrentX = x;
+        CurrentY = y;
+        StateHasChanged();
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsInitialized && _jsModule != null)
+        {
+            try
+            {
+                await _jsModule.InvokeVoidAsync("drawingInterop.dispose", DrawingContainerId);
+                await _jsModule.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error disposing drawing JS: {ex.Message}");
+            }
+        }
+        
+        _objRef?.Dispose();
+    }
+} 

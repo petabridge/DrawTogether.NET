@@ -322,6 +322,20 @@ __pycache__/
 *.odx.cs
 *.xsd.cs
 
+/shelf/
+/workspace.xml
+# Rider ignored files
+/.idea.DrawTogether.iml
+/modules.xml
+/contentModel.xml
+/projectSettingsUpdater.xml
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+.idea/
+
 # OpenCover UI analysis results
 OpenCover/
 

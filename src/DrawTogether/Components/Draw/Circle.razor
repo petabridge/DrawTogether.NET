@@ -1,0 +1,20 @@
+﻿<circle cx="@cX" cy="@cY" r="@(radius * 0.8)"
+        stroke="@borderColor" stroke-width="@(radius * 0.05)"
+        fill="@fillColor"
+        id="@cursorId"/>
+
+@code {
+
+    [Parameter] public int radius { get; set; }
+
+    [Parameter] public string borderColor { get; set; } = "#eee";
+
+    [Parameter] public string fillColor { get; set; } = "#eee";
+
+    [Parameter] public string cursorId { get; set; } = string.Empty;
+
+    [Parameter] public double cX { get; set; }
+
+    [Parameter] public double cY { get; set; }
+
+}

@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <UserSecretsId>aspnet-DrawTogether-519D8737-B9C5-4479-BE39-7C98C7D228C7</UserSecretsId>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <ContainerRepository>drawtogether</ContainerRepository>
+        <ContainerTitle>drawtogether</ContainerTitle>
+        <ContainerImageTags>$(VersionPrefix);latest</ContainerImageTags>
+        <ContainerRuntimeIdentifiers>linux-x64;linux-arm64;linux-arm;</ContainerRuntimeIdentifiers>
+        <RuntimeIdentifiers>osx-x64;osx-arm64;linux-x64;linux-arm64;linux-arm;win-x64;</RuntimeIdentifiers>
+        <!-- Remove parallel builds, to avoid race conditions -->
+        <ContainerPublishInParallel>false</ContainerPublishInParallel>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- HTTP/HTTPS -->
+        <ContainerPort Include="80" Type="tcp" />
+        <ContainerPort Include="443" Type="tcp" />
+        <!-- Akka.Management -->
+        <ContainerPort Include="8558" Type="tcp" />
+        <!-- Akka.Remote -->
+        <ContainerPort Include="8081" Type="tcp" />
+        <!-- Petabridge.Cmd -->
+        <ContainerPort Include="9110" Type="tcp" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+        <TieredPGO>true</TieredPGO>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Akka.Discovery.Azure" />
+        <PackageReference Include="Akka.Discovery.KubernetesApi" />
+        <PackageReference Include="Akka.Management" />
+        <PackageReference Include="Akka.Persistence.Sql.Hosting" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
+        <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore"/>
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools"/>
+        <PackageReference Include="MudBlazor" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+        <PackageReference Include="Petabridge.Cmd.Cluster" />
+        <PackageReference Include="Petabridge.Cmd.Cluster.Sharding" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DrawTogether.Actors\DrawTogether.Actors.csproj" />
+      <ProjectReference Include="..\DrawTogether.Email\DrawTogether.Email.csproj" />
+    </ItemGroup>
+</Project>

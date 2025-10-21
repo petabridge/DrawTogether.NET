@@ -1,0 +1,145 @@
+name: pr_validation
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - main
+  pull_request:
+    branches:
+      - master
+      - dev
+      - main
+
+permissions:
+  checks: write
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  build-docker:
+    # Permissions this GitHub Action needs for other things in GitHub
+    name: Docker-${{matrix.os}}
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v5.0.0
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: "Install .NET SDK"
+        uses: actions/setup-dotnet@v4.3.1
+        with:
+          global-json-file: "./global.json"
+
+      - name: "Update release notes"
+        shell: pwsh
+        run: |
+          ./build.ps1
+
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+
+      - name: "dotnet docker"
+        run: dotnet publish -c Release /t:PublishContainer
+
+
+  test:
+    # Permissions this GitHub Action needs for other things in GitHub
+    name: Test-${{matrix.os}}
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v5.0.0
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: "Install .NET SDK"
+        uses: actions/setup-dotnet@v4.3.1
+        with:
+          global-json-file: "./global.json"
+
+      - name: "dotnet tool restore"
+        run: dotnet tool restore
+
+      - name: "Update release notes"
+        shell: pwsh
+        run: |
+          ./build.ps1
+
+      - name: Extract PlayWrightVersion using PowerShell
+        id: playwright_version
+        shell: pwsh
+        run: |
+          $xml = [xml](Get-Content './Directory.Packages.props')
+          $playwrightVersion = $xml.Project.PropertyGroup | Where-Object { $_.Label -eq 'SharedVersions' } | Select-Object -ExpandProperty PlayWrightVersion
+          echo "PlayWrightVersion=$playwrightVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+        if: runner.os == 'Linux'
+
+      - name: Use PlayWrightVersion
+        run: |
+          echo "The Playwright version is: ${{ env.PlayWrightVersion }}"
+        if: runner.os == 'Linux'
+
+      # https://playwrightsolutions.com/playwright-github-action-to-cache-the-browser-binaries/
+      - name: Cache playwright binaries
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ env.PlayWrightVersion }}
+        if: runner.os == 'Linux'
+
+      - name: "dotnet build"
+        run: dotnet build -c Release
+
+      - name: "Ensure playwright browsers are installed"
+        working-directory: ./tests/DrawTogether.End2End.Tests
+        shell: pwsh
+        run: ./bin/Release/net9.0/playwright.ps1 install --with-deps
+        if: runner.os == 'Linux' && steps.playwright-cache.outputs.cache-hit != 'true'
+
+      - name: "dotnet test"
+        run: dotnet test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+        if: runner.os == 'Linux'
+
+      - name: "dotnet test (unit tests only - Windows)"
+        run: dotnet incrementalist run --config .incrementalist/incrementalistWindows.json -- test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+        if: runner.os == 'Windows'
+
+      - name: Collect Playwright screenshots into one folder
+        run: |
+          mkdir -p flat-screenshots
+          # find every file under any TestScreenshots directory and copy it into flat-screenshots/
+          find . -type f -path '*/TestScreenshots/*' -exec cp {} flat-screenshots/ \;
+        if: runner.os == 'Linux'
+
+      - name: Upload flattened screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots-${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}-${{ github.run_id }}
+          path: flat-screenshots/
+        if: runner.os == 'Linux'

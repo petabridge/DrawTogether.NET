@@ -1,0 +1,102 @@
+﻿@page "/"
+@using Akka.Actor
+@using Akka.Hosting
+@using Akka.Streams
+@using Akka.Streams.Dsl
+@using DrawTogether.Actors.Drawings
+@using DrawTogether.Entities.Drawings
+@inject IRequiredActor<AllDrawingsIndexActor> AllDrawingsIndexActor
+@inject ActorSystem ActorSystem
+@implements IAsyncDisposable
+
+<PageTitle>DrawTogether.NET</PageTitle>
+
+<h1>Active Paint Sessions</h1>
+@if (_drawingActivities.Count == 0)
+{
+    // no active paint sessions right now, would you like to start one?
+    <div class="center">
+        <strong>No active sessions right now - would you like to make one?</strong>
+        <NavLink href="/NewPaint">Start new paint session.</NavLink>
+    </div>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="align-content-start">
+        <MudDataGrid Items="_drawingActivities.Values" TItem="DrawingActivityUpdate">
+            <Columns>
+                <PropertyColumn Property="x => x.DrawingSessionId.SessionId" Title="Session Id"/>
+                <PropertyColumn Property="x => x.ActiveUsers" Title="Active Users"/>
+                <PropertyColumn Property="x => x.LastUpdate" Title="Last Update"/>
+                <TemplateColumn CellClass="d-flex justify-end">
+                    <CellTemplate>
+                        <MudLink Href="@string.Format("paint/{0}", context.Item.DrawingSessionId.SessionId)">Join Session!</MudLink>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+        </MudDataGrid>
+    </MudContainer>
+}
+
+@code{
+    private readonly Dictionary<DrawingSessionId, DrawingActivityUpdate> _drawingActivities = new();
+    private readonly CancellationTokenSource _shutdownCts = new();
+    private IActorRef? allDrawingsActor;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1000));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, _shutdownCts.Token);
+        allDrawingsActor = await AllDrawingsIndexActor.GetAsync(linkedCts.Token);
+
+        var currentState = await allDrawingsActor.Ask<IReadOnlyCollection<DrawingActivityUpdate>>(DrawingIndexQueries.GetAllActiveDrawingSessions.Instance, linkedCts.Token);
+
+        // populate the current table
+        foreach (var drawingActivity in currentState)
+        {
+            _drawingActivities[drawingActivity.DrawingSessionId] = drawingActivity;
+        }
+
+        // start the subscription
+        _ = RunSubscription();
+    }
+
+    // create subscription
+    async Task RunSubscription()
+    {
+        var source = Source.ActorRef<List<DrawingActivityUpdate>>(100, OverflowStrategy.DropHead);
+        var (srcActor, src) = source.PreMaterialize(ActorSystem);
+
+        // starts the pump
+        allDrawingsActor.Tell(new DrawingIndexQueries.SubscribeToDrawingSessionUpdates(srcActor));
+
+        await foreach (var items in src
+                           .RunAsAsyncEnumerable(ActorSystem)
+                           .WithCancellation(_shutdownCts.Token))
+        {
+            foreach (var item in items)
+            {
+                if (item.IsRemoved)
+                {
+                    _drawingActivities.Remove(item.DrawingSessionId);
+                }
+                else
+                {
+                    _drawingActivities[item.DrawingSessionId] = item;
+                }
+            }
+
+            StateHasChanged();
+        }
+        
+        // shut the actor down to prevent resource leaks
+        srcActor.Tell(PoisonPill.Instance);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _shutdownCts.CancelAsync();
+        _shutdownCts.Dispose();
+    }
+
+}

@@ -1,0 +1,27 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <Copyright>Copyright © 2015-$([System.DateTime]::Now.Year) Petabridge</Copyright>
+    <Authors>Petabridge</Authors>
+    <VersionPrefix>0.2.10</VersionPrefix>
+    <PackageReleaseNotes>Add TLS support for Akka.Remote in K8s deployment</PackageReleaseNotes>
+    <PackageIconUrl>
+    </PackageIconUrl>
+    <PackageProjectUrl>
+    </PackageProjectUrl>
+    <PackageLicenseUrl>
+    </PackageLicenseUrl>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(CI)' == 'true' ">
+    <ContainerLabel Include="com.docker.extension.changelog" Value="$(GITHUB_SERVER_URL)/$(GITHUB_REPOSITORY)/commit/$(GITHUB_SHA)" />
+    <ContainerLabel Include="com.docker.extension.publisher-url" Value="$(GITHUB_SERVER_URL)/$(GITHUB_REPOSITORY_OWNER)" />
+  </ItemGroup>
+  
+</Project>

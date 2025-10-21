@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+      <PackageReference Include="FluentEmail.Mailgun" />
+      <PackageReference Include="FluentEmail.Razor" />
+      <PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
+    </ItemGroup>
+
+</Project>

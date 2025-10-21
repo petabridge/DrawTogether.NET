@@ -1,0 +1,195 @@
+@page "/drawtest"
+@using DrawTogether.Entities.Drawings
+@using DrawTogether.Entities.Users
+@using System.Diagnostics
+@using DrawTogether.Entities
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using Color = DrawTogether.Entities.Drawings.Color
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid h-100 d-flex flex-column">
+    <div class="row mb-3">
+        <div class="col">
+            <h3>Drawing Surface Test</h3>
+            <p>This page tests the coordinate mapping between mouse/touch input and SVG rendering.</p>
+            
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label>Cursor Size:</label>
+                        <input type="range" class="form-range" min="1" max="50" 
+                               @bind-value="CursorSizeValue" @bind-value:event="oninput" />
+                        <span>@CursorSizeValue</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Color:</label>
+                        <input type="color" @bind="ColorString" />
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="showGrid" @bind="ShowGrid">
+                        <label class="form-check-label" for="showGrid">
+                            Show Grid (100px)
+                        </label>
+                    </div>
+                    
+                    <button class="btn btn-danger" @onclick="ClearDrawing">Clear Drawing</button>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">Coordinates</div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>X</th>
+                                        <th>Y</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Raw Input</td>
+                                        <td>@RawX.ToString("F2")</td>
+                                        <td>@RawY.ToString("F2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Transformed</td>
+                                        <td>@TransformedX.ToString("F2")</td>
+                                        <td>@TransformedY.ToString("F2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Difference</td>
+                                        <td>@((TransformedX - RawX).ToString("F2"))</td>
+                                        <td>@((TransformedY - RawY).ToString("F2"))</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row flex-grow-1">
+        <div class="col">
+            <div class="card" style="height: 500px;">
+                <div class="card-body p-0" style="overflow: hidden;">
+                    <DrawingSurface 
+                        @ref="DrawingSurface"
+                        DrawingContainerId="test-drawing-surface"
+                        Strokes="Strokes"
+                        UserId="TestUserId"
+                        CurrentColor="CurrentColor"
+                        CursorSize="CursorSize"
+                        ShowGrid="ShowGrid"
+                        OnPointAdded="OnPointAdded"
+                        OnRawCoordinatesChanged="OnRawCoordinatesChanged" />
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-3">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">Testing Instructions</div>
+                <div class="card-body">
+                    <ol>
+                        <li>Draw on the surface above to test coordinate transformation</li>
+                        <li>Check the coordinates table to see raw vs. transformed values</li>
+                        <li>Try different viewport sizes (resize browser window)</li>
+                        <li>Enable the grid to visually check alignment (grid lines are 100px apart)</li>
+                        <li>Test touch input if on a touch-enabled device</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private DrawingSurface? DrawingSurface;
+    private Dictionary<StrokeId, ConnectedStroke> Strokes { get; set; } = new();
+    private UserId TestUserId { get; set; } = new UserId("test-user");
+    private string ColorString { get; set; } = "#000000";
+    private Color CurrentColor => new(ColorString);
+    
+    // Store cursor size as an integer and create GreaterThanZeroInteger when needed
+    private int CursorSizeValue { get; set; } = 8;
+    private GreaterThanZeroInteger CursorSize => new(CursorSizeValue);
+    
+    private bool ShowGrid { get; set; } = false;
+    
+    private double RawX { get; set; }
+    private double RawY { get; set; }
+    private double TransformedX { get; set; }
+    private double TransformedY { get; set; }
+    
+    private int _nextStrokeId = 1;
+    private StrokeId? _currentStrokeId;
+    
+    private void OnPointAdded(Point point)
+    {
+        TransformedX = point.X;
+        TransformedY = point.Y;
+        
+        if (_currentStrokeId == null)
+        {
+            // Start a new stroke
+            _currentStrokeId = new StrokeId(_nextStrokeId++);
+            
+            // Create a new stroke with the required positional parameter Id
+            var newStroke = new ConnectedStroke(_currentStrokeId.Value)
+            {
+                StrokeColor = CurrentColor,
+                StrokeWidth = CursorSize,
+                Points = new List<Point> { point }
+            };
+            
+            Strokes[_currentStrokeId.Value] = newStroke;
+        }
+        else
+        {
+            // Add to existing stroke - need to create a new instance with updated points
+            if (Strokes.TryGetValue(_currentStrokeId.Value, out var existingStroke))
+            {
+                var updatedPoints = new List<Point>(existingStroke.Points) { point };
+                
+                var updatedStroke = new ConnectedStroke(_currentStrokeId.Value)
+                {
+                    StrokeColor = existingStroke.StrokeColor,
+                    StrokeWidth = existingStroke.StrokeWidth, 
+                    Points = updatedPoints
+                };
+                
+                Strokes[_currentStrokeId.Value] = updatedStroke;
+            }
+        }
+        
+        StateHasChanged();
+    }
+    
+    private void OnRawCoordinatesChanged((double x, double y) coordinates)
+    {
+        RawX = coordinates.x;
+        RawY = coordinates.y;
+        StateHasChanged();
+    }
+    
+    private void ClearDrawing()
+    {
+        Strokes.Clear();
+        _currentStrokeId = null;
+    }
+    
+    protected override void OnInitialized()
+    {
+        // Start with a clean slate
+        _currentStrokeId = null;
+    }
+} 
