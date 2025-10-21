@@ -77,9 +77,11 @@ This creates two Docker images:
 
 The version is automatically pulled from `Directory.Build.props`.
 
-### 2. Install Nginx Ingress Controller
+### 2. Install Nginx Ingress Controller (Optional)
 
-DrawTogether requires an Ingress controller. For Docker Desktop:
+> **Note:** Skip this step if you plan to use port-forwarding (Option A in step 4). The ingress is only needed for the production-like setup (Option B).
+
+For Docker Desktop:
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
@@ -120,11 +122,35 @@ This script will:
 
 ### 4. Access the Application
 
-Once deployed, DrawTogether will be available at:
+#### Option A: Port Forward (Simplest)
 
-**http://drawtogether.localdev.me**
+Access the application directly without ingress:
 
-> **Note:** `localdev.me` is a public DNS entry that resolves to 127.0.0.1, making it convenient for local development with Ingress.
+```bash
+kubectl port-forward svc/drawtogether -n drawtogether 8080:8080
+```
+
+Then open your browser to: **http://localhost:8080**
+
+> **Note:** Keep the terminal window open while using the application. Press Ctrl+C to stop port-forwarding when done.
+
+#### Option B: Via Ingress (Production-like)
+
+To use the ingress (requires hosts file entry):
+
+**1. Add to your hosts file:**
+
+**Windows:** Edit `C:\Windows\System32\drivers\etc\hosts` as Administrator
+**Linux/Mac:** Edit `/etc/hosts` with sudo
+
+Add this line:
+```
+127.0.0.1 drawtogether.localdev.me
+```
+
+**2. Access via browser:** **http://drawtogether.localdev.me**
+
+> **Why hosts file?** The ingress is configured to route traffic for `drawtogether.localdev.me`. While this domain resolves to 127.0.0.1 on public DNS, some environments don't use system DNS properly, requiring the hosts file entry.
 
 ## Common Operations
 
