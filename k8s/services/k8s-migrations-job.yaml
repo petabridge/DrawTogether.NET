@@ -42,7 +42,7 @@ spec:
         image: drawtogether-migrationservice:0.2.7
         imagePullPolicy: IfNotPresent
         env:
-        - name: ConnectionStrings__DefaultConnection
+        - name: ConnectionStrings__DrawTogetherDb
           value: "Server=sqlserver,1644; Database=DrawTogether; User Id=sa; Password=yourStrong(!)Password; TrustServerCertificate=true;"
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"
