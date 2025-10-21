@@ -92,9 +92,9 @@ The K8s manifests use [Kustomize](https://kustomize.io/) for configuration manag
 
 ### Deployment Scripts
 
-#### Deploy All Services
+#### Deploy or Update Services
 
-To deploy all services to your local Kubernetes cluster:
+To deploy or update all services to your local Kubernetes cluster:
 
 ```powershell
 ./k8s/deployAll.ps1
@@ -105,24 +105,11 @@ This script will:
 2. Update the Kustomize overlay with the current version
 3. Create the `drawtogether` namespace if needed
 4. Apply all Kubernetes manifests using Kustomize
+5. Wait for the StatefulSet rollout to complete (with zero-downtime rolling updates)
+
+**This script is idempotent** - run it for both initial deployment and updates. Kubernetes automatically performs zero-downtime rolling updates when you change the image version.
 
 DrawTogether will be available at http://drawtogether.localdev.me
-
-#### Rolling Updates
-
-To perform a rolling update of the application without downtime:
-
-```powershell
-./k8s/updateImages.ps1
-```
-
-This script will:
-1. Extract the current version from `Directory.Build.props`
-2. Update the StatefulSet with the new image version
-3. Wait for the rollout to complete
-4. Display the updated pod status
-
-**Note:** This only updates the application pods. If database schema changes are needed, manually delete and recreate the migrations job.
 
 #### Destroy All Services
 

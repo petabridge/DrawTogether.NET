@@ -6,6 +6,6 @@ resources:
 
 images:
   - name: drawtogether
-    newTag: "0.2.7"
+    newTag: "0.2.9"
   - name: drawtogether-migrationservice
-    newTag: "0.2.7"
+    newTag: "0.2.9"
