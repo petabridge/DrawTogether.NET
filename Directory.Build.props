@@ -8,8 +8,8 @@
   <PropertyGroup>
     <Copyright>Copyright © 2015-$([System.DateTime]::Now.Year) Petabridge</Copyright>
     <Authors>Petabridge</Authors>
-    <VersionPrefix>0.2.9</VersionPrefix>
-    <PackageReleaseNotes>Test simplified deployment with deployAll.ps1</PackageReleaseNotes>
+    <VersionPrefix>0.2.10</VersionPrefix>
+    <PackageReleaseNotes>Add TLS support for Akka.Remote in K8s deployment</PackageReleaseNotes>
     <PackageIconUrl>
     </PackageIconUrl>
     <PackageProjectUrl>

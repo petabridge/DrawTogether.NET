@@ -1,7 +1,7 @@
 # Create Kubernetes Secret for Akka.Remote TLS Certificate
 # This script creates a secret from the test certificate file
 
-$certPath = Join-Path $PSScriptRoot ".." "certs" "akka-node.pfx"
+$certPath = Join-Path (Join-Path (Join-Path $PSScriptRoot "..") "certs") "akka-node.pfx"
 
 if (-not (Test-Path $certPath)) {
     Write-Error "Certificate file not found at: $certPath"
@@ -19,7 +19,7 @@ kubectl create secret generic akka-tls-cert `
     --namespace=drawtogether
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "✓ Secret 'akka-tls-cert' created successfully!" -ForegroundColor Green
+    Write-Host "Secret 'akka-tls-cert' created successfully!" -ForegroundColor Green
     Write-Host ""
     Write-Host "To apply this configuration to your deployment:" -ForegroundColor Cyan
     Write-Host "  kubectl apply -k k8s/overlays/local" -ForegroundColor Yellow
