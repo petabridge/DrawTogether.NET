@@ -14,7 +14,12 @@ public class HealthCheckTests
     public HealthCheckTests(DrawTogetherFixture fixture)
     {
         _fixture = fixture;
-        _httpClient = new HttpClient
+
+        // Create HttpClient with handler that accepts self-signed certificates (for testing only)
+        var handler = new HttpClientHandler();
+        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+
+        _httpClient = new HttpClient(handler)
         {
             BaseAddress = _fixture.GetDrawTogetherEndpoint()
         };
