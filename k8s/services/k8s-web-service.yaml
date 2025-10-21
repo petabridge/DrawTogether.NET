@@ -75,7 +75,7 @@ spec:
       - name: pbm-sidecar
         image: petabridge/pbm:latest #sidecar
       - name: drawtogether-app
-        image: drawtogether-app:0.2.7
+        image: drawtogether:0.2.7
         imagePullPolicy: IfNotPresent
         env:
         - name: POD_NAME
