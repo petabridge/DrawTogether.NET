@@ -27,39 +27,6 @@ This will:
 
 The Aspire dashboard will show you all running services with their statuses and endpoints.
 
-
-### Entity Framework Core Migrations
-
-If you need to apply a change to the database model, by default this project uses the SQL Server 2022 launched in the step above. To apply migrations, change your directory to the `DrawTogether` project:
-
-```shell
-cd ./src/DrawTogether/
-```
-
-And then apply the migrations:
-
-```shell
-dotnet ef database update
-```
-
-To generate a migration script that you can apply manually (later):
-
-```shell
-dotnet ef migrations script
-```
-
-### MailGun Configuration
-
-DrawTogether.NET can use [MailGun](https://mailgun.com/) to send outbound emails (via `FluentEmail.Mailgun`) - and the following two secrets need to be configured in order for that sending to work:
-
-```shell
-cd ./src/DrawTogether/
-dotnet user-secrets set "EmailSettings:MailgunDomain" "<mailgun-domain>"
-dotnet user-secrets set "EmailSettings:MailgunApiKey" "<mailgun-api-key>"
-```
-
-If these settings are not provided, DrawTogether.NET will simply fall back to not having email available to support ASP.NET Core Identity.
-
 ## Deployment
 
 Out of the box DrawTogether.NET supports Kubernetes deployments, however, if you want to run it locally you'll need to make sure that you have [Nginx Ingress](https://kubernetes.github.io/ingress-nginx/deploy/#quick-start) enabled.
@@ -120,3 +87,15 @@ To remove all DrawTogether resources from Kubernetes:
 ```
 
 This deletes the entire `drawtogether` namespace and all resources within it.
+
+## Contributing
+
+We welcome contributions! If you'd like to contribute to DrawTogether.NET, please see our [Contributing Guide](./CONTRIBUTING.md) for information on:
+
+- Setting up your development environment
+- Working with Entity Framework migrations
+- Configuring optional features (email, etc.)
+- Running tests
+- Submitting pull requests
+
+For questions or issues, please check the [existing issues](https://github.com/petabridge/DrawTogether.NET/issues) or create a new one.
