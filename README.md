@@ -81,6 +81,55 @@ This will tag local Docker images with the following labels:
 * `drawtogether:latest` and `drawtogether:{VERSION}`
 * `drawtogether-migrationservice:latest` and `drawtogether-migrationservice:{VERSION}`
 
-The K8s manifests in [`k8s/`](k8s/) are configured to use the versioned tags automatically.
+The version number is pulled from `Directory.Build.props` and automatically applied during deployment.
 
-Finally, launch everything via the `./k8s/deployAll.cmd` - and DrawTogether should be available at http://drawtogether.localdev.me
+### Kustomize Deployment
+
+The K8s manifests use [Kustomize](https://kustomize.io/) for configuration management:
+
+* **Base configuration** (`k8s/base/`): Contains all core Kubernetes manifests without version tags
+* **Environment overlays** (`k8s/overlays/local/`): Environment-specific configurations that apply version tags
+
+### Deployment Scripts
+
+#### Deploy All Services
+
+To deploy all services to your local Kubernetes cluster:
+
+```powershell
+./k8s/deployAll.ps1
+```
+
+This script will:
+1. Extract the version from `Directory.Build.props`
+2. Update the Kustomize overlay with the current version
+3. Create the `drawtogether` namespace if needed
+4. Apply all Kubernetes manifests using Kustomize
+
+DrawTogether will be available at http://drawtogether.localdev.me
+
+#### Rolling Updates
+
+To perform a rolling update of the application without downtime:
+
+```powershell
+./k8s/updateImages.ps1
+```
+
+This script will:
+1. Extract the current version from `Directory.Build.props`
+2. Update the StatefulSet with the new image version
+3. Wait for the rollout to complete
+4. Display the updated pod status
+
+**Note:** This only updates the application pods. If database schema changes are needed, manually delete and recreate the migrations job.
+
+#### Destroy All Services
+
+To remove all DrawTogether resources from Kubernetes:
+
+```powershell
+./k8s/destroyAll.ps1
+```
+
+This deletes the entire `drawtogether` namespace and all resources within it.
