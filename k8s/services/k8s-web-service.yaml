@@ -108,9 +108,22 @@ spec:
           value: "service.namespace=$(NAMESPACE),service.instance.id=$(POD_NAME)"
         - name: OTEL_SERVICE_NAME
           value: "drawtogether"
+        livenessProbe:
+          httpGet:
+            path: /healthz/live
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
-          tcpSocket: 
-            port: 8080  
+          httpGet:
+            path: /healthz/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         ports:
           - containerPort: 8558
             protocol: TCP
