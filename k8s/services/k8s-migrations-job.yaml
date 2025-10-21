@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: drawtogether-migrations
+  namespace: drawtogether
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app: drawtogether-migrations
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+      - name: wait-for-sql
+        image: mcr.microsoft.com/mssql-tools:latest
+        command:
+          - /bin/bash
+          - -c
+          - |
+            echo "Waiting for SQL Server to be ready..."
+            MAX_ATTEMPTS=30
+            ATTEMPT=1
+
+            while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+              if /opt/mssql-tools/bin/sqlcmd -S sqlserver,1644 -U sa -P "yourStrong(!)Password" -Q "SELECT 1" &>/dev/null; then
+                echo "SQL Server is ready!"
+                exit 0
+              fi
+
+              if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+                echo "ERROR: SQL Server is not responding after $MAX_ATTEMPTS attempts"
+                exit 1
+              fi
+
+              echo "Attempt $ATTEMPT/$MAX_ATTEMPTS failed, retrying in 2 seconds..."
+              sleep 2
+              ATTEMPT=$((ATTEMPT + 1))
+            done
+      containers:
+      - name: migrations
+        image: drawtogether-migrationservice:0.2.7
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ConnectionStrings__DefaultConnection
+          value: "Server=sqlserver,1644; Database=DrawTogether; User Id=sa; Password=yourStrong(!)Password; TrustServerCertificate=true;"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
