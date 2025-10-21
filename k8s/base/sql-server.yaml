@@ -1,4 +1,16 @@
 apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlserver-data
+  namespace: drawtogether
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: sqlserver
@@ -37,9 +49,19 @@ spec:
           - name: ACCEPT_EULA
             value: "Y"
           - name: SA_PASSWORD
-            value: "yourStrong(!)Password"
+            valueFrom:
+              secretKeyRef:
+                name: sqlserver-secret
+                key: sa-password
           - name: MSSQL_PID
             value: "Developer"
         ports:
         - containerPort: 1433
           name: sqlserver
+        volumeMounts:
+        - name: mssql-data
+          mountPath: /var/opt/mssql/data
+      volumes:
+      - name: mssql-data
+        persistentVolumeClaim:
+          claimName: sqlserver-data

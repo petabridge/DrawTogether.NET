@@ -23,7 +23,7 @@ spec:
             ATTEMPT=1
 
             while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-              if /opt/mssql-tools/bin/sqlcmd -S sqlserver,1644 -U sa -P "yourStrong(!)Password" -Q "SELECT 1" &>/dev/null; then
+              if /opt/mssql-tools/bin/sqlcmd -S sqlserver,1644 -U sa -P "$SQL_SA_PASSWORD" -Q "SELECT 1" &>/dev/null; then
                 echo "SQL Server is ready!"
                 exit 0
               fi
@@ -37,12 +37,21 @@ spec:
               sleep 2
               ATTEMPT=$((ATTEMPT + 1))
             done
+        env:
+        - name: SQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: sqlserver-secret
+              key: sa-password
       containers:
       - name: migrations
         image: drawtogether-migrationservice
         imagePullPolicy: IfNotPresent
         env:
         - name: ConnectionStrings__DrawTogetherDb
-          value: "Server=sqlserver,1644; Database=DrawTogether; User Id=sa; Password=yourStrong(!)Password; TrustServerCertificate=true;"
+          valueFrom:
+            secretKeyRef:
+              name: sqlserver-secret
+              key: drawTogether-connection-string
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"

@@ -92,7 +92,10 @@ spec:
             fieldRef:
               fieldPath: status.hostIP
         - name: ConnectionStrings__DefaultConnection
-          value: "Server=sqlserver,1644; Database=DrawTogether; User Id=sa; Password=yourStrong(!)Password; TrustServerCertificate=true;"
+          valueFrom:
+            secretKeyRef:
+              name: sqlserver-secret
+              key: drawTogether-connection-string
         - name: AkkaSettings__RemoteOptions__Port
           value: "5055"
         - name: AkkaSettings__RemoteOptions__PublicHostname
