@@ -8,8 +8,8 @@
   <PropertyGroup>
     <Copyright>Copyright © 2015-$([System.DateTime]::Now.Year) Petabridge</Copyright>
     <Authors>Petabridge</Authors>
-    <VersionPrefix>0.2.7</VersionPrefix>
-    <PackageReleaseNotes>Made Akka.Management Hostname configurable - null for Kubernetes (auto-detect IP), explicit for Aspire</PackageReleaseNotes>
+    <VersionPrefix>0.2.9</VersionPrefix>
+    <PackageReleaseNotes>Test simplified deployment with deployAll.ps1</PackageReleaseNotes>
     <PackageIconUrl>
     </PackageIconUrl>
     <PackageProjectUrl>

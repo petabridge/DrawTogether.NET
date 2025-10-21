@@ -70,17 +70,53 @@ This is how to deploy the most recent version of Nginx Ingress on Docker Desktop
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
 ```
 
-Next, you will need to build a local Docker image:
+Next, you will need to build the Docker images for both the application and migration service:
 
+```bash
+dotnet publish --os linux --arch x64 -c Release -t:PublishContainer
 ```
-dotnet publish src/DrawTogether/DrawTogether.csproj --os linux --arch x64 -c Release -p:PublishProfile=DefaultContainer
+
+This will tag local Docker images with the following labels:
+
+* `drawtogether:latest` and `drawtogether:{VERSION}`
+* `drawtogether-migrationservice:latest` and `drawtogether-migrationservice:{VERSION}`
+
+The version number is pulled from `Directory.Build.props` and automatically applied during deployment.
+
+### Kustomize Deployment
+
+The K8s manifests use [Kustomize](https://kustomize.io/) for configuration management:
+
+* **Base configuration** (`k8s/base/`): Contains all core Kubernetes manifests without version tags
+* **Environment overlays** (`k8s/overlays/local/`): Environment-specific configurations that apply version tags
+
+### Deployment Scripts
+
+#### Deploy or Update Services
+
+To deploy or update all services to your local Kubernetes cluster:
+
+```powershell
+./k8s/deployAll.ps1
 ```
 
-This will tag a local Docker image with the following labels:
+This script will:
+1. Extract the version from `Directory.Build.props`
+2. Update the Kustomize overlay with the current version
+3. Create the `drawtogether` namespace if needed
+4. Apply all Kubernetes manifests using Kustomize
+5. Wait for the StatefulSet rollout to complete (with zero-downtime rolling updates)
 
-* `drawtogether-app:latest`
-* `drawtogether-app:{VERSION}`
+**This script is idempotent** - run it for both initial deployment and updates. Kubernetes automatically performs zero-downtime rolling updates when you change the image version.
 
-Update the [`k8s-web-service.yaml`](k8s/services/k8s-web-service.yaml) to use the `drawtogether-app:{VERSION}` label - if you try to use the `drawtogether-app:latest` Kubernetes will attempt to pull the latest image from Docker Hub.
+DrawTogether will be available at http://drawtogether.localdev.me
 
-Finally, launch everything via the `./k8s/deployAll.cmd` - and DrawTogether should be available at http://drawtogether.localdev.me
+#### Destroy All Services
+
+To remove all DrawTogether resources from Kubernetes:
+
+```powershell
+./k8s/destroyAll.ps1
+```
+
+This deletes the entire `drawtogether` namespace and all resources within it.

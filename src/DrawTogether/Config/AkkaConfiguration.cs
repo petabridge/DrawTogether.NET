@@ -47,7 +47,7 @@ public static class AkkaConfiguration
                         journalBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.Journal[default]");
                     }, snapshotBuilder: snapshotBuilder =>
                     {
-                        snapshotBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.SnapshotStore[default]");   
+                        snapshotBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.SnapshotStore[default]");
                     })
                 .AddAllDrawingsIndexActor(roleName)
                 .AddDrawingSessionActor(roleName)

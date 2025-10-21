@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
     <PropertyGroup>
-        <IsPublishable>false</IsPublishable >
+        <ContainerRepository>drawtogether-migrationservice</ContainerRepository>
+        <ContainerImageTags>$(VersionPrefix);latest</ContainerImageTags>
     </PropertyGroup>
 
     <ItemGroup>
