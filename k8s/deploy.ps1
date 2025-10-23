@@ -10,7 +10,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $namespace = "drawtogether"
-$scriptDir = $PSScriptRoot
+# Ensure $PSScriptRoot is set even when dot-sourcing
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
 
 # Map strategy to overlay directory
 $overlayName = switch($Strategy) {
@@ -129,7 +130,14 @@ if ($jobExists) {
 
 # Apply Kustomize configuration
 Write-Host "Applying Kustomize configuration from [$overlayPath]..." -ForegroundColor Yellow
-kubectl apply -k $overlayPath
+# Change to k8s directory for kustomize to work with relative paths
+$originalLocation = Get-Location
+Set-Location $scriptDir
+try {
+    kubectl apply -k "overlays/$overlayName"
+} finally {
+    Set-Location $originalLocation
+}
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to apply Kustomize configuration"
@@ -138,9 +146,14 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "All services deployed successfully!" -ForegroundColor Green
 
-# Wait for StatefulSet rollout to complete
-Write-Host "`nWaiting for StatefulSet rollout to complete..." -ForegroundColor Yellow
-kubectl rollout status statefulset/drawtogether -n $namespace --timeout=5m
+# Wait for rollout to complete based on strategy
+if ($Strategy -eq "statefulset") {
+    Write-Host "`nWaiting for StatefulSet rollout to complete..." -ForegroundColor Yellow
+    kubectl rollout status statefulset/drawtogether -n $namespace --timeout=5m
+} else {
+    Write-Host "`nWaiting for Deployment rollout to complete..." -ForegroundColor Yellow
+    kubectl rollout status deployment/drawtogether -n $namespace --timeout=5m
+}
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nRollout completed successfully!" -ForegroundColor Green

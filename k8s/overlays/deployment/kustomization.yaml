@@ -24,6 +24,6 @@ commonLabels:
 
 images:
   - name: drawtogether
-    newTag: "0.2.10"
+    newTag: "0.2.11"
   - name: drawtogether-migrationservice
-    newTag: "0.2.10"
+    newTag: "0.2.11"
