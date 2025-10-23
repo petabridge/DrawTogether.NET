@@ -7,4 +7,6 @@ resources:
   - sql-secret.yaml
   - sql-server.yaml
   - k8s-migrations-job.yaml
-  - k8s-web-service.yaml
+  - ingress.yaml
+  - service.yaml
+  - statefulset.yaml

@@ -55,7 +55,9 @@ The version number is pulled from `Directory.Build.props` and automatically appl
 The K8s manifests use [Kustomize](https://kustomize.io/) for configuration management:
 
 * **Base configuration** (`k8s/base/`): Contains all core Kubernetes manifests without version tags
-* **Environment overlays** (`k8s/overlays/local/`): Environment-specific configurations that apply version tags
+* **Environment overlays**:
+  - `k8s/overlays/local/`: StatefulSet deployment with stable pod names
+  - `k8s/overlays/deployment/`: Deployment-based configuration with reduced rebalancing overhead
 
 ### Deployment Scripts
 
@@ -64,15 +66,24 @@ The K8s manifests use [Kustomize](https://kustomize.io/) for configuration manag
 To deploy or update all services to your local Kubernetes cluster:
 
 ```powershell
-./k8s/deployAll.ps1
+# Deploy with StatefulSet (default)
+./k8s/deploy.ps1
+
+# Deploy with Deployment strategy (reduced rebalancing during updates)
+./k8s/deploy.ps1 -Strategy deployment
 ```
 
 This script will:
 1. Extract the version from `Directory.Build.props`
-2. Update the Kustomize overlay with the current version
-3. Create the `drawtogether` namespace if needed
-4. Apply all Kubernetes manifests using Kustomize
-5. Wait for the StatefulSet rollout to complete (with zero-downtime rolling updates)
+2. Build Docker images if they don't exist for the current version
+3. Update the Kustomize overlay with the current version
+4. Create the `drawtogether` namespace if needed
+5. Apply all Kubernetes manifests using Kustomize
+6. Wait for the rollout to complete (with zero-downtime rolling updates)
+
+**Deployment Strategies:**
+- **statefulset** (default): Stable pod names, predictable scaling, more rebalancing during updates
+- **deployment**: Dynamic pod names, surge updates, less rebalancing overhead
 
 **This script is idempotent** - run it for both initial deployment and updates. Kubernetes automatically performs zero-downtime rolling updates when you change the image version.
 

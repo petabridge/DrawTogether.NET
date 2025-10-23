@@ -30,9 +30,20 @@ spec:
           - /bin/bash
           - -c
           - |
-            echo "Waiting for migrations job to complete..."
-            kubectl wait --for=condition=complete --timeout=300s job/drawtogether-migrations -n drawtogether
-            echo "Migrations completed successfully!"
+            echo "Checking migrations status..."
+            # Check if job exists
+            if kubectl get job drawtogether-migrations -n drawtogether &>/dev/null; then
+              # Job exists, check if it's already completed
+              if kubectl get job drawtogether-migrations -n drawtogether -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' | grep -q "True"; then
+                echo "Migrations job already completed"
+              else
+                echo "Waiting for migrations job to complete..."
+                kubectl wait --for=condition=complete --timeout=300s job/drawtogether-migrations -n drawtogether
+                echo "Migrations completed successfully!"
+              fi
+            else
+              echo "Migrations job not found (likely already completed and cleaned up)"
+            fi
       containers:
       - name: pbm-sidecar
         image: petabridge/pbm:latest #sidecar
