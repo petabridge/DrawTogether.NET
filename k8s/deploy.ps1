@@ -45,8 +45,12 @@ $imagesToCheck = @("drawtogether:$version", "drawtogether-migrationservice:$vers
 $needBuild = $false
 
 foreach ($image in $imagesToCheck) {
+    $ErrorActionPreference = "Continue"
     docker image inspect $image 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) {
+    $imageExists = $LASTEXITCODE -eq 0
+    $ErrorActionPreference = "Stop"
+
+    if (-not $imageExists) {
         Write-Host "Image $image not found" -ForegroundColor Yellow
         $needBuild = $true
     } else {
