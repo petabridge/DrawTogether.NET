@@ -7,16 +7,14 @@ kind: Kustomization
 namespace: drawtogether
 
 resources:
-  # Include specific base resources (not the statefulset)
-  - ../../base/configs/k8s-crd.yaml
-  - ../../base/configs/k8s-rbac.yaml
-  - ../../base/sql-secret.yaml
-  - ../../base/sql-server.yaml
-  - ../../base/k8s-migrations-job.yaml
-  - ../../base/ingress.yaml
-  - ../../base/service.yaml
-  # Use deployment instead of statefulset
+  # Include the base configuration
+  - ../../base
+  # Add deployment instead of statefulset
   - deployment.yaml
+
+# Remove the StatefulSet from base
+patchesStrategicMerge:
+  - delete-statefulset.yaml
 
 # Apply common labels
 commonLabels:

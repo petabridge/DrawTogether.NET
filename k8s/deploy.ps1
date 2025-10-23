@@ -13,6 +13,9 @@ $namespace = "drawtogether"
 # Ensure $PSScriptRoot is set even when dot-sourcing
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
 
+# Resolve to absolute path to handle being called from different directories
+$scriptDir = (Get-Item $scriptDir).FullName
+
 # Map strategy to overlay directory
 $overlayName = switch($Strategy) {
     "statefulset" { "local" }
@@ -110,6 +113,36 @@ if ($LASTEXITCODE -eq 0) {
     exit 1
 }
 
+# Create or update TLS secret if certificate exists
+$certPath = Join-Path (Join-Path (Split-Path $scriptDir -Parent) "certs") "akka-node.pfx"
+if (Test-Path $certPath) {
+    Write-Host "Creating/updating TLS secret from certificate..." -ForegroundColor Yellow
+    # Check if secret exists
+    $ErrorActionPreference = "Continue"
+    kubectl get secret akka-tls-cert -n $namespace 2>$null | Out-Null
+    $secretExists = $LASTEXITCODE -eq 0
+    $ErrorActionPreference = "Stop"
+
+    if ($secretExists) {
+        # Delete existing secret to update it
+        kubectl delete secret akka-tls-cert -n $namespace 2>$null | Out-Null
+    }
+
+    # Create the secret
+    kubectl create secret generic akka-tls-cert `
+        --from-file=akka-node.pfx=$certPath `
+        --namespace=$namespace
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "TLS secret 'akka-tls-cert' created successfully" -ForegroundColor Green
+    } else {
+        Write-Warning "Failed to create TLS secret - pods may not start if TLS is enabled"
+    }
+} else {
+    Write-Warning "TLS certificate not found at $certPath - skipping TLS secret creation"
+    Write-Warning "Pods may not start if TLS is enabled in configuration"
+}
+
 # Delete migrations job if it exists (Jobs are immutable, must recreate for version updates)
 Write-Host "Checking for existing migrations job..." -ForegroundColor Yellow
 $ErrorActionPreference = "Continue"  # Temporarily allow errors
@@ -130,14 +163,8 @@ if ($jobExists) {
 
 # Apply Kustomize configuration
 Write-Host "Applying Kustomize configuration from [$overlayPath]..." -ForegroundColor Yellow
-# Change to k8s directory for kustomize to work with relative paths
-$originalLocation = Get-Location
-Set-Location $scriptDir
-try {
-    kubectl apply -k "overlays/$overlayName"
-} finally {
-    Set-Location $originalLocation
-}
+# Use the absolute path for kubectl apply
+kubectl apply -k $overlayPath
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to apply Kustomize configuration"
