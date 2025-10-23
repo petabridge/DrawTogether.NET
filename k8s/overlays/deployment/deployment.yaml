@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drawtogether
+  namespace: drawtogether
+  labels:
+    app: drawtogether
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Allow 1 extra pod during rollout (temporarily 4 pods)
+      maxUnavailable: 0  # Keep all pods available during update
+  selector:
+    matchLabels:
+      app: drawtogether
+  template:
+    metadata:
+      labels:
+        app: drawtogether
+        cluster: drawtogether
+    spec:
+      serviceAccountName: drawtogether
+      terminationGracePeriodSeconds: 35
+      initContainers:
+      - name: wait-for-migrations
+        image: bitnami/kubectl:latest
+        command:
+          - /bin/bash
+          - -c
+          - |
+            echo "Waiting for migrations job to complete..."
+            kubectl wait --for=condition=complete --timeout=300s job/drawtogether-migrations -n drawtogether
+            echo "Migrations completed successfully!"
+      containers:
+      - name: pbm-sidecar
+        image: petabridge/pbm:latest #sidecar
+      - name: drawtogether-app
+        image: drawtogether
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: ConnectionStrings__DefaultConnection
+          value: "Server=sqlserver,1644; Database=DrawTogether; User Id=sa; Password=yourStrong(!)Password; TrustServerCertificate=true;"
+        - name: AkkaSettings__RemoteOptions__Port
+          value: "5055"
+        # For Deployment, we use IP-based addressing instead of DNS
+        # This works better with dynamic pod scheduling (Karpenter, spot instances)
+        - name: AkkaSettings__RemoteOptions__PublicHostname
+          value: "$(POD_IP)"
+        - name: AkkaSettings__AkkaManagementOptions__Enabled
+          value: "true"
+        - name: AkkaSettings__AkkaManagementOptions__DiscoveryMethod
+          value: "Kubernetes"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://$(NODE_IP):4317"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.namespace=$(NAMESPACE),service.instance.id=$(POD_NAME)"
+        - name: OTEL_SERVICE_NAME
+          value: "drawtogether"
+        # TLS Configuration for Akka.Remote
+        - name: AkkaSettings__TlsSettings__Enabled
+          value: "true"
+        - name: AkkaSettings__TlsSettings__CertificatePath
+          value: "/certs/akka-node.pfx"
+        - name: AkkaSettings__TlsSettings__CertificatePassword
+          value: "Test123!"
+        - name: AkkaSettings__TlsSettings__ValidateCertificates
+          value: "false"
+        livenessProbe:
+          httpGet:
+            path: /healthz/live
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        ports:
+          - containerPort: 8558
+            protocol: TCP
+            name: management
+          - containerPort: 5055
+            protocol: TCP
+            name: akka-remote
+          - containerPort: 8080
+            protocol: TCP
+            name: http
+        volumeMounts:
+        - name: tls-cert
+          mountPath: /certs
+          readOnly: true
+      volumes:
+      - name: tls-cert
+        secret:
+          secretName: akka-tls-cert

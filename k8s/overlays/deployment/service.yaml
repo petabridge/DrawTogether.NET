@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: drawtogether
+  namespace: drawtogether
+  labels:
+    app: drawtogether
+spec:
+  # For Deployment, we use a regular Service (not headless)
+  # publishNotReadyAddresses is still important for Akka.Discovery
+  publishNotReadyAddresses: true
+  # We still use ClusterIP: None for discovery purposes
+  clusterIP: None
+  ports:
+    - port: 8558
+      name: management
+    - port: 5055
+      name: akka-remote
+    - port: 8080
+      name: http
+  selector:
+    app: drawtogether
