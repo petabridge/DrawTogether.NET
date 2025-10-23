@@ -6,10 +6,7 @@ metadata:
   labels:
     app: drawtogether
 spec:
-  # For Deployment, we use a regular Service (not headless)
-  # publishNotReadyAddresses is still important for Akka.Discovery
   publishNotReadyAddresses: true
-  # We still use ClusterIP: None for discovery purposes
   clusterIP: None
   ports:
     - port: 8558
