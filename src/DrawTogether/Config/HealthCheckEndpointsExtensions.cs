@@ -34,7 +34,7 @@ public static class HealthCheckEndpointsExtensions
         // /healthz/ready - only readiness checks (Akka.Persistence checks by name pattern)
         endpoints.MapHealthChecks("/healthz/ready", new HealthCheckOptions
         {
-            Predicate = check => check.Name.Contains("Akka.Persistence"),
+            Predicate = check => check.Name.Contains("ready"),
             ResponseWriter = WriteHealthCheckResponse
         });
 
