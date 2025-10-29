@@ -45,8 +45,7 @@ public static class AkkaConfiguration
                     autoInitialize: true, journalBuilder: journalBuilder =>
                     {
                         journalBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.Journal[default]", tags:["Akka.Persistence", "Akka.Persistence.Sql.Journal", "ready"]);
-                        journalBuilder.WithConnectivityCheck(new SqlJournalOptions()
-                            { ConnectionString = connectionString });
+                        journalBuilder.WithConnectivityCheck();
                     }, snapshotBuilder: snapshotBuilder =>
                     {
                         snapshotBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.SnapshotStore[default]", tags:["Akka.Persistence", "Akka.Persistence.Sql.SnapshotStore", "ready"]);
