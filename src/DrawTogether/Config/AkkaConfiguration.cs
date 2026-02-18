@@ -33,8 +33,8 @@ public static class AkkaConfiguration
         {
             builder.ConfigureNetwork(provider)
                 .AddDrawingProtocolSerializer()
-                .WithAkkaClusterReadinessCheck()
-                .WithActorSystemLivenessCheck()
+                .WithAkkaClusterReadinessCheck(tags:["Akka", "ready", "Akka.Cluster"])
+                .WithActorSystemLivenessCheck(tags:["Akka", "liveness"])
                 .WithSqlPersistence(
                     connectionString: connectionString,
                     providerName: ProviderName.SqlServer2022,
@@ -44,10 +44,11 @@ public static class AkkaConfiguration
                     useWriterUuidColumn: true,
                     autoInitialize: true, journalBuilder: journalBuilder =>
                     {
-                        journalBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.Journal[default]");
+                        journalBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.Journal[default]", tags:["Akka.Persistence", "Akka.Persistence.Sql.Journal", "ready"]);
+                        journalBuilder.WithConnectivityCheck();
                     }, snapshotBuilder: snapshotBuilder =>
                     {
-                        snapshotBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.SnapshotStore[default]");
+                        snapshotBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.SnapshotStore[default]", tags:["Akka.Persistence", "Akka.Persistence.Sql.SnapshotStore", "ready"]);
                     })
                 .AddAllDrawingsIndexActor(roleName)
                 .AddDrawingSessionActor(roleName)

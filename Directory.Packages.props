@@ -1,9 +1,9 @@
 <Project>
   <PropertyGroup Label="SharedVersions">
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AkkaVersion>1.5.53</AkkaVersion>
-    <AkkaHostingVersion>1.5.53</AkkaHostingVersion>
-    <AkkaManagementVersion>1.5.52</AkkaManagementVersion>
+    <AkkaVersion>1.5.55</AkkaVersion>
+    <AkkaHostingVersion>1.5.55</AkkaHostingVersion>
+    <AkkaManagementVersion>1.5.55</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.5</PetabridgeCmdVersion>
     <AspireVersion>9.5.1</AspireVersion>
     <PlaywrightVersion>1.52.0</PlaywrightVersion>
@@ -17,7 +17,7 @@
     <PackageVersion Include="Akka.Discovery.KubernetesApi" Version="$(AkkaManagementVersion)" />
     <PackageVersion Include="Akka.Hosting" Version="$(AkkaHostingVersion)" />
     <PackageVersion Include="Akka.Management" Version="$(AkkaManagementVersion)" />
-    <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.53" />
+    <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.55.1" />
     <PackageVersion Include="Akka.Streams" Version="$(AkkaVersion)" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="$(AkkaVersion)" />
     <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="$(AspireVersion)" />
