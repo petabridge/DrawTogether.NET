@@ -1,3 +1,4 @@
+using Aaron.Akka.Aspire.Hosting;
 using DrawTogether.AppHost;
 using Microsoft.Extensions.Configuration;
 
@@ -8,7 +9,6 @@ var drawTogetherAspireConfig = builder.Configuration.GetSection("DrawTogether")
 
 // Adding a default password for ease of use - we can get rid of this but for a quick "git clone and run" it makes sense
 // have to add this when using data volumes otherwise Aspire will brick itself
-
 var saPassword = builder.AddParameter(
     "sql-sa-password",
     () => "YourStrong!Passw0rd", // *must* satisfy SQL Server complexity rules
@@ -31,8 +31,18 @@ var migrationService = builder.AddProject<Projects.DrawTogether_MigrationService
 var drawTogether = builder.AddProject<Projects.DrawTogether>("DrawTogether")
     .WithReplicas(drawTogetherAspireConfig.Replicas)
     .WithReference(db, "DefaultConnection")
-    .WaitForCompletion(migrationService)
-    .ConfigureAkkaManagementForApp(drawTogetherAspireConfig);
+    .WaitForCompletion(migrationService);
+
+if (drawTogetherAspireConfig.UseAkkaManagement)
+{
+    var redis = builder.AddRedis("akka-discovery");
+    var akka = builder.AddAkka("drawtogether").WithClustering(redis);
+    drawTogether.WithReference(akka);
+}
+
+// PBM port still needs explicit endpoint since plugin doesn't handle it
+drawTogether.WithEndpoint(name: "pbm", protocol: System.Net.Sockets.ProtocolType.Tcp,
+    env: "AkkaSettings__PbmOptions__Port");
 
 // https://github.com/petabridge/pbm-sidecar - used to run `pbm` commands on the DrawTogether actor system
 var pbmSidecar = builder.AddContainer("pbm-sidecar", "petabridge/pbm:latest")

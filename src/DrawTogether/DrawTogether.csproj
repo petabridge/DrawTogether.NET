@@ -30,6 +30,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Aaron.Akka.Aspire" />
+        <PackageReference Include="Aaron.Akka.Discovery.Redis" />
         <PackageReference Include="Akka.Discovery.Azure" />
         <PackageReference Include="Akka.Discovery.KubernetesApi" />
         <PackageReference Include="Akka.Management" />

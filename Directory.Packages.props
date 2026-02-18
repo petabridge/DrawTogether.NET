@@ -1,13 +1,13 @@
 <Project>
   <PropertyGroup Label="SharedVersions">
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AkkaVersion>1.5.53</AkkaVersion>
-    <AkkaHostingVersion>1.5.53</AkkaHostingVersion>
-    <AkkaManagementVersion>1.5.52</AkkaManagementVersion>
+    <AkkaVersion>1.5.60</AkkaVersion>
+    <AkkaHostingVersion>1.5.59</AkkaHostingVersion>
+    <AkkaManagementVersion>1.5.59</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.5</PetabridgeCmdVersion>
-    <AspireVersion>9.5.1</AspireVersion>
+    <AspireVersion>13.1.0</AspireVersion>
     <PlaywrightVersion>1.52.0</PlaywrightVersion>
-    <MsftVersion>9.0.9</MsftVersion>
+    <MsftVersion>10.0.2</MsftVersion>
   </PropertyGroup>
   <!-- Akka.NET Package Versions -->
   <ItemGroup>
@@ -17,12 +17,11 @@
     <PackageVersion Include="Akka.Discovery.KubernetesApi" Version="$(AkkaManagementVersion)" />
     <PackageVersion Include="Akka.Hosting" Version="$(AkkaHostingVersion)" />
     <PackageVersion Include="Akka.Management" Version="$(AkkaManagementVersion)" />
-    <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.53" />
+    <PackageVersion Include="Akka.Persistence.Sql.Hosting" Version="1.5.59" />
     <PackageVersion Include="Akka.Streams" Version="$(AkkaVersion)" />
     <PackageVersion Include="Akka.Streams.TestKit" Version="$(AkkaVersion)" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="$(AspireVersion)" />
-    <PackageVersion Include="Aspire.Hosting.Docker" Version="9.5.1-preview.1.25502.11" />
-    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="9.5.1-preview.1.25502.11" />
+    <PackageVersion Include="Aspire.Hosting.Docker" Version="13.1.1-preview.1.26105.8" />
+    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="13.1.1-preview.1.26105.8" />
     <PackageVersion Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -31,6 +30,13 @@
     <PackageVersion Include="MudBlazor" Version="7.15.0" />
     <PackageVersion Include="Petabridge.Cmd.Cluster" Version="$(PetabridgeCmdVersion)" />
     <PackageVersion Include="Petabridge.Cmd.Cluster.Sharding" Version="$(PetabridgeCmdVersion)" />
+  </ItemGroup>
+  <!-- Aaron.Akka.Aspire Plugin Packages -->
+  <ItemGroup>
+    <PackageVersion Include="Aaron.Akka.Aspire.Hosting" Version="0.1.0" />
+    <PackageVersion Include="Aaron.Akka.Aspire" Version="0.1.0" />
+    <PackageVersion Include="Aaron.Akka.Discovery.Redis" Version="0.1.0" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="$(AspireVersion)" />
   </ItemGroup>
   <!-- ASP.NET Package Versions -->
   <ItemGroup>
@@ -57,24 +63,24 @@
   </ItemGroup>
   <!-- OTEL Package Versions -->
   <ItemGroup>
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
   </ItemGroup>
   <!-- Utility Package Versions -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.102" />
   </ItemGroup>
   <!-- Test Package Versions -->
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.Testing" Version="$(AspireVersion)" />
     <PackageVersion Include="Microsoft.Playwright" Version="$(PlaywrightVersion)" />
     <PackageVersion Include="Microsoft.Playwright.MSTest" Version="$(PlaywrightVersion)" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0">
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
