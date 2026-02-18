@@ -38,6 +38,9 @@ if (drawTogetherAspireConfig.UseAkkaManagement)
     var redis = builder.AddRedis("akka-discovery");
     var akka = builder.AddAkka("drawtogether").WithClustering(redis);
     drawTogether.WithReference(akka);
+
+    // Gate Aspire readiness on cluster formation + persistence health
+    drawTogether.WithHttpHealthCheck("/healthz/ready");
 }
 
 // PBM port still needs explicit endpoint since plugin doesn't handle it

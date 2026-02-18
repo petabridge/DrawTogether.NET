@@ -31,10 +31,14 @@ public static class HealthCheckEndpointsExtensions
             ResponseWriter = WriteHealthCheckResponse
         });
 
-        // /healthz/ready - only readiness checks (Akka.Persistence checks by name pattern)
+        // /healthz/ready - readiness checks (Akka.Persistence + cluster membership)
+        // Matches: Akka.Persistence health checks (by name), akka.cluster.join (K8s path, "ready" tag),
+        // and akka-cluster-membership (Aspire plugin, "akka" tag only — exclude liveness)
         endpoints.MapHealthChecks("/healthz/ready", new HealthCheckOptions
         {
-            Predicate = check => check.Name.Contains("Akka.Persistence"),
+            Predicate = check => check.Name.Contains("Akka.Persistence") ||
+                                 check.Tags.Contains("ready") ||
+                                 check.Name.Contains("akka-cluster-membership"),
             ResponseWriter = WriteHealthCheckResponse
         });
 
