@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+using Aaron.Akka.Aspire;
+using Aaron.Akka.Discovery.Redis;
 using Akka.Cluster.Hosting;
 using Akka.Discovery.Azure;
 using Akka.Discovery.Config.Hosting;
@@ -19,22 +20,42 @@ namespace DrawTogether.Config;
 
 public static class AkkaConfiguration
 {
-    public static IServiceCollection ConfigureAkka(this IServiceCollection services, IConfiguration configuration, Action<AkkaConfigurationBuilder, IServiceProvider> additionalConfig)
+    public static IServiceCollection ConfigureAkka(this IServiceCollection services, IConfiguration configuration,
+        Action<AkkaConfigurationBuilder, IServiceProvider> additionalConfig)
     {
         var akkaSettings = BindAkkaSettings(services, configuration);
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (connectionString is null)
             throw new Exception("DefaultConnection ConnectionString is missing");
-        
+
         const string roleName = ClusterConstants.DrawStateRoleName;
 
         services.AddAkka(akkaSettings.ActorSystemName, (builder, provider) =>
         {
-            builder.ConfigureNetwork(provider)
+            var config = provider.GetRequiredService<IConfiguration>();
+            var aspireEnabled = config.GetValue<bool>("Akka:Cluster:Enabled");
+
+            if (aspireEnabled)
+            {
+                // ASPIRE PATH — plugin handles remote, cluster, management, bootstrap, discovery
+                builder.WithAspireClusterBootstrap(provider,
+                    configureDiscovery: (b, cfg) =>
+                    {
+                        var redisConn = cfg.GetConnectionString("akka-discovery");
+                        if (!string.IsNullOrEmpty(redisConn))
+                            b.WithRedisDiscovery(redisConn, cfg["Akka:Cluster:ServiceName"]);
+                    },
+                    clusterConfigure: c => c.Roles = [roleName]);
+            }
+            else
+            {
+                // KUBERNETES / STANDALONE PATH — existing manual configuration
+                builder.ConfigureNetwork(provider);
+            }
+
+            builder
                 .AddDrawingProtocolSerializer()
-                .WithAkkaClusterReadinessCheck()
-                .WithActorSystemLivenessCheck()
                 .WithSqlPersistence(
                     connectionString: connectionString,
                     providerName: ProviderName.SqlServer2022,
@@ -44,18 +65,18 @@ public static class AkkaConfiguration
                     useWriterUuidColumn: true,
                     autoInitialize: true, journalBuilder: journalBuilder =>
                     {
-                        journalBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.Journal[default]");
+                        journalBuilder.WithHealthCheck(name: "Akka.Persistence.Sql.Journal[default]");
                     }, snapshotBuilder: snapshotBuilder =>
                     {
-                        snapshotBuilder.WithHealthCheck(name:"Akka.Persistence.Sql.SnapshotStore[default]");
+                        snapshotBuilder.WithHealthCheck(name: "Akka.Persistence.Sql.SnapshotStore[default]");
                     })
                 .AddAllDrawingsIndexActor(roleName)
                 .AddDrawingSessionActor(roleName)
                 .AddLocalDrawingSessionActor();
-            
+
             additionalConfig(builder, provider);
         });
-        
+
         return services;
     }
 
@@ -102,11 +123,13 @@ public static class AkkaConfiguration
                 {
                     options.ContactPointDiscovery.ServiceName = settings.AkkaManagementOptions.ServiceName;
                     options.ContactPointDiscovery.PortName = settings.AkkaManagementOptions.PortName;
-                    options.ContactPointDiscovery.RequiredContactPointsNr = settings.AkkaManagementOptions.RequiredContactPointsNr;
+                    options.ContactPointDiscovery.RequiredContactPointsNr =
+                        settings.AkkaManagementOptions.RequiredContactPointsNr;
                     options.ContactPointDiscovery.ContactWithAllContactPoints = true;
                     options.ContactPointDiscovery.StableMargin = TimeSpan.FromSeconds(5);
-                    
-                    options.ContactPoint.FilterOnFallbackPort = settings.AkkaManagementOptions.FilterOnFallbackPort;
+
+                    options.ContactPoint.FilterOnFallbackPort =
+                        settings.AkkaManagementOptions.FilterOnFallbackPort;
                 }, autoStart: true);
 
             switch (settings.AkkaManagementOptions.DiscoveryMethod)
@@ -122,8 +145,9 @@ public static class AkkaConfiguration
                 {
                     var connectionString = configuration.GetConnectionString("AkkaManagementAzure");
                     if (connectionString is null)
-                        throw new Exception("AkkaManagement table storage connection string [AkkaManagementAzure] is missing");
-                    
+                        throw new Exception(
+                            "AkkaManagement table storage connection string [AkkaManagementAzure] is missing");
+
                     builder
                         .WithAzureDiscovery(options =>
                         {
@@ -154,6 +178,11 @@ public static class AkkaConfiguration
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+
+            // Health checks for K8s path only — Aspire plugin adds its own
+            builder
+                .WithAkkaClusterReadinessCheck()
+                .WithActorSystemLivenessCheck();
         }
         else
         {
