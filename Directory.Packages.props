@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <AkkaVersion>1.5.60</AkkaVersion>
     <AkkaHostingVersion>1.5.59</AkkaHostingVersion>
-    <AkkaManagementVersion>1.5.59</AkkaManagementVersion>
+    <AkkaManagementVersion>1.5.67</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.5</PetabridgeCmdVersion>
     <AspireVersion>13.1.0</AspireVersion>
     <PlaywrightVersion>1.52.0</PlaywrightVersion>
