@@ -108,7 +108,10 @@ jobs:
         shell: pwsh
         run: |
           $xml = [xml](Get-Content './Directory.Build.props')
-          $tfm = $xml.Project.PropertyGroup | Select-Object -ExpandProperty TargetFramework
+          # Cast to array: with a single PropertyGroup element, .PropertyGroup is an object, not a collection
+          $propertyGroups = @($xml.Project.PropertyGroup)
+          $tfm = $propertyGroups | Where-Object { $_.TargetFramework } | Select-Object -First 1 -ExpandProperty TargetFramework
+          if (-not $tfm) { throw "TargetFramework not found in Directory.Build.props" }
           echo "TargetFramework=$tfm" | Out-File -FilePath $env:GITHUB_ENV -Append
         if: runner.os == 'Linux'
 
