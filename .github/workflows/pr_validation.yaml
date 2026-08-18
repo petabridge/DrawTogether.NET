@@ -103,6 +103,15 @@ jobs:
           echo "The Playwright version is: ${{ env.PlayWrightVersion }}"
         if: runner.os == 'Linux'
 
+      - name: Extract TargetFramework using PowerShell
+        id: target_framework
+        shell: pwsh
+        run: |
+          $xml = [xml](Get-Content './Directory.Build.props')
+          $tfm = $xml.Project.PropertyGroup | Select-Object -ExpandProperty TargetFramework
+          echo "TargetFramework=$tfm" | Out-File -FilePath $env:GITHUB_ENV -Append
+        if: runner.os == 'Linux'
+
       # https://playwrightsolutions.com/playwright-github-action-to-cache-the-browser-binaries/
       - name: Cache playwright binaries
         uses: actions/cache@v4
@@ -119,7 +128,7 @@ jobs:
       - name: "Ensure playwright browsers are installed"
         working-directory: ./tests/DrawTogether.End2End.Tests
         shell: pwsh
-        run: ./bin/Release/net9.0/playwright.ps1 install --with-deps
+        run: ./bin/Release/${{ env.TargetFramework }}/playwright.ps1 install --with-deps
         if: runner.os == 'Linux' && steps.playwright-cache.outputs.cache-hit != 'true'
 
       - name: "dotnet test"
