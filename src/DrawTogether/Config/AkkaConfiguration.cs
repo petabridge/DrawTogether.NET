@@ -1,5 +1,5 @@
-using Aaron.Akka.Aspire;
-using Aaron.Akka.Discovery.Redis;
+using Akka.Aspire;
+using Akka.Discovery.Redis;
 using Akka.Cluster.Hosting;
 using Akka.Discovery.Azure;
 using Akka.Discovery.Config.Hosting;

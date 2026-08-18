@@ -1,4 +1,4 @@
-using Aaron.Akka.Aspire.Hosting;
+using Akka.Aspire.Hosting;
 using DrawTogether.AppHost;
 using Microsoft.Extensions.Configuration;
 

@@ -1,13 +1,13 @@
 <Project>
   <PropertyGroup Label="SharedVersions">
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AkkaVersion>1.5.60</AkkaVersion>
-    <AkkaHostingVersion>1.5.59</AkkaHostingVersion>
-    <AkkaManagementVersion>1.5.59</AkkaManagementVersion>
+    <AkkaVersion>1.5.70</AkkaVersion>
+    <AkkaHostingVersion>1.5.70</AkkaHostingVersion>
+    <AkkaManagementVersion>1.5.70</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.5</PetabridgeCmdVersion>
-    <AspireVersion>13.1.0</AspireVersion>
+    <AspireVersion>13.3.5</AspireVersion>
     <PlaywrightVersion>1.52.0</PlaywrightVersion>
-    <MsftVersion>10.0.2</MsftVersion>
+    <MsftVersion>10.0.7</MsftVersion>
   </PropertyGroup>
   <!-- Akka.NET Package Versions -->
   <ItemGroup>
@@ -31,11 +31,11 @@
     <PackageVersion Include="Petabridge.Cmd.Cluster" Version="$(PetabridgeCmdVersion)" />
     <PackageVersion Include="Petabridge.Cmd.Cluster.Sharding" Version="$(PetabridgeCmdVersion)" />
   </ItemGroup>
-  <!-- Aaron.Akka.Aspire Plugin Packages -->
+  <!-- Akka.Aspire Plugin Packages -->
   <ItemGroup>
-    <PackageVersion Include="Aaron.Akka.Aspire.Hosting" Version="0.1.0" />
-    <PackageVersion Include="Aaron.Akka.Aspire" Version="0.1.0" />
-    <PackageVersion Include="Aaron.Akka.Discovery.Redis" Version="0.1.0" />
+    <PackageVersion Include="Akka.Aspire.Hosting" Version="1.5.70" />
+    <PackageVersion Include="Akka.Aspire" Version="1.5.70" />
+    <PackageVersion Include="Akka.Discovery.Redis" Version="1.5.70" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="$(AspireVersion)" />
   </ItemGroup>
   <!-- ASP.NET Package Versions -->
@@ -67,7 +67,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
   </ItemGroup>
   <!-- Utility Package Versions -->
   <ItemGroup>
@@ -88,6 +88,7 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Verify.Xunit" Version="17.10.2" />
     <PackageVersion Include="Verify.DiffPlex" Version="1.3.0" />
-    <PackageVersion Include="Akka.Hosting.TestKit" Version="$(AkkaHostingVersion)" />
+    <!-- 1.5.62 is the last Akka.Hosting.TestKit on xunit v2 (Akka.TestKit.Xunit2); 1.5.67+ switched to xunit v3 and breaks the v2-based test projects -->
+    <PackageVersion Include="Akka.Hosting.TestKit" Version="1.5.62" />
   </ItemGroup>
 </Project>
