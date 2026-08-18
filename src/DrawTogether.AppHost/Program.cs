@@ -14,7 +14,11 @@ var saPassword = builder.AddParameter(
     () => "YourStrong!Passw0rd", // *must* satisfy SQL Server complexity rules
     secret: true);
 
-var sqlServer = builder.AddSqlServer("sql", saPassword);
+var sqlServer = builder.AddSqlServer("sql", saPassword)
+    // Pin the image tag instead of the moving 2022-latest so the CI image cache
+    // (pr_validation.yaml, "Cache SQL Server image") stays deterministic.
+    // Keep this tag in sync with that workflow's cache key and docker pull/save.
+    .WithImageTag("2022-CU26-ubuntu-22.04");
 
 if (drawTogetherAspireConfig.UseVolumes)
 {

@@ -125,6 +125,29 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ env.PlayWrightVersion }}
         if: runner.os == 'Linux'
 
+      # Cache the pinned SQL Server image so cold runners don't pull ~1.6GB
+      # before every E2E run (same pattern as the Playwright binary cache).
+      # The tag MUST match the pinned tag in src/DrawTogether.AppHost/Program.cs
+      # (AddSqlServer.WithImageTag) - keep them in sync.
+      - name: Cache SQL Server image
+        id: mssql-cache
+        uses: actions/cache@v4
+        with:
+          path: ./ci-cache/mssql
+          key: ${{ runner.os }}-mssql-server-2022-CU26-ubuntu-22.04
+        if: runner.os == 'Linux'
+
+      - name: Pull and save SQL Server image (cache miss)
+        run: |
+          mkdir -p ./ci-cache/mssql
+          docker pull mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
+          docker save mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04 -o ./ci-cache/mssql/image.tar
+        if: runner.os == 'Linux' && steps.mssql-cache.outputs.cache-hit != 'true'
+
+      - name: Load SQL Server image from cache (cache hit)
+        run: docker load -i ./ci-cache/mssql/image.tar
+        if: runner.os == 'Linux' && steps.mssql-cache.outputs.cache-hit == 'true'
+
       - name: "dotnet build"
         run: dotnet build -c Release
 
