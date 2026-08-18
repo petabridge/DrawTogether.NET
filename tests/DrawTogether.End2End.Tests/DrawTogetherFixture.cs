@@ -1,4 +1,4 @@
-﻿using Aspire.Hosting;
+using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 
 namespace DrawTogether.End2End.Tests;
@@ -20,7 +20,10 @@ public class DrawTogetherFixture : IAsyncLifetime
 
         _app = await builder.BuildAsync();
         
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+        // Cold CI runners must pull the SQL Server image (~1.6GB) and wait for SQL
+        // to initialize before health checks pass; a 1-minute budget is too tight
+        // and causes flaky TaskCanceledException failures in the AppHost fixture.
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         await _app.StartAsync(cts.Token);
         
         // Wait for the DrawTogether web app to be ready
