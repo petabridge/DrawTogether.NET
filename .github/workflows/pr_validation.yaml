@@ -117,7 +117,7 @@ jobs:
 
       # https://playwrightsolutions.com/playwright-github-action-to-cache-the-browser-binaries/
       - name: Cache playwright binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: playwright-cache
         with:
           path: |
@@ -131,7 +131,7 @@ jobs:
       # (AddSqlServer.WithImageTag) - keep them in sync.
       - name: Cache SQL Server image
         id: mssql-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ./ci-cache/mssql
           key: ${{ runner.os }}-mssql-server-2022-CU26-ubuntu-22.04
