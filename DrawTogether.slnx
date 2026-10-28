@@ -1,0 +1,28 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/aspire/">
+    <Project Path="src/DrawTogether.AppHost/DrawTogether.AppHost.csproj" />
+  </Folder>
+  <Folder Name="/build/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+    <File Path="RELEASE_NOTES.md" />
+  </Folder>
+  <Folder Name="/infrastructure/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/DrawTogether.End2End.Tests/DrawTogether.End2End.Tests.csproj" />
+    <Project Path="tests/DrawTogether.Tests/DrawTogether.Tests.csproj" />
+  </Folder>
+  <Project Path="src/DrawTogether.Actors/DrawTogether.Actors.csproj" />
+  <Project Path="src/DrawTogether.Email/DrawTogether.Email.csproj" />
+  <Project Path="src/DrawTogether.Entities/DrawTogether.Entities.csproj" />
+  <Project Path="src/DrawTogether.MigrationService/DrawTogether.MigrationService.csproj" />
+  <Project Path="src/DrawTogether/DrawTogether.csproj" />
+</Solution>
