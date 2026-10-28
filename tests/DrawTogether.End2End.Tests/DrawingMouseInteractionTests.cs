@@ -49,8 +49,10 @@ public class DrawingMouseInteractionTests : IAsyncLifetime
         
         _output.WriteLine($"Navigating to {endpoint}");
         
-        // Navigate to the app
-        await page.GotoAsync(endpoint.ToString());
+        // Navigate to the app. Retry on ERR_NETWORK_CHANGED: a freshly launched
+        // Chromium can abort its first navigation when Aspire's container network
+        // is still settling.
+        await GotoWithNetworkChangeRetryAsync(page, endpoint.ToString(), output: _output);
         
         // Handle authentication if needed - example for form-based auth
         await HandleNewUserRegistration(page, endpoint, _output);
