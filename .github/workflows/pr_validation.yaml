@@ -30,13 +30,13 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           lfs: true
           fetch-depth: 0
 
       - name: "Install .NET SDK"
-        uses: actions/setup-dotnet@v6.0.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: "./global.json"
 
@@ -46,7 +46,7 @@ jobs:
           ./build.ps1
 
       - name: Set up Docker
-        uses: docker/setup-docker-action@v5
+        uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5
         with:
           daemon-config: |
             {
@@ -71,13 +71,13 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           lfs: true
           fetch-depth: 0
 
       - name: "Install .NET SDK"
-        uses: actions/setup-dotnet@v6.0.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: "./global.json"
 
@@ -117,7 +117,7 @@ jobs:
 
       # https://playwrightsolutions.com/playwright-github-action-to-cache-the-browser-binaries/
       - name: Cache playwright binaries
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         id: playwright-cache
         with:
           path: |
@@ -131,7 +131,7 @@ jobs:
       # (AddSqlServer.WithImageTag) - keep them in sync.
       - name: Cache SQL Server image
         id: mssql-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ./ci-cache/mssql
           key: ${{ runner.os }}-mssql-server-2022-CU26-ubuntu-22.04
@@ -173,7 +173,7 @@ jobs:
         if: runner.os == 'Linux'
 
       - name: Upload flattened screenshots
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-screenshots-${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}-${{ github.run_id }}
           path: flat-screenshots/
