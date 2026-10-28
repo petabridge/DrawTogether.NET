@@ -162,7 +162,7 @@ jobs:
         if: runner.os == 'Linux'
 
       - name: "dotnet test (unit tests only - Windows)"
-        run: dotnet incrementalist run --config .incrementalist/incrementalistWindows.json -- test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+        run: dotnet incrementalist run -s DrawTogether.slnx --config .incrementalist/incrementalistWindows.json -- test --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
         if: runner.os == 'Windows'
 
       - name: Collect Playwright screenshots into one folder
