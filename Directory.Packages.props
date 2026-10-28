@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup Label="SharedVersions">
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Required so the transitive-only security pins below actually take effect. -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <AkkaVersion>1.5.70</AkkaVersion>
     <AkkaHostingVersion>1.5.70</AkkaHostingVersion>
     <AkkaManagementVersion>1.5.70</AkkaManagementVersion>
@@ -22,7 +24,9 @@
     <PackageVersion Include="Akka.Streams.TestKit" Version="$(AkkaVersion)" />
     <PackageVersion Include="Aspire.Hosting.Docker" Version="13.1.1-preview.1.26105.8" />
     <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="13.1.1-preview.1.26105.8" />
-    <PackageVersion Include="Grpc.Tools" Version="2.72.0">
+    <!-- 2.78.0+ is required by Aspire.Hosting.AppHost / Aspire.Hosting.Testing; enabling
+         transitive pinning turned this long-standing downgrade into a NU1109 error. -->
+    <PackageVersion Include="Grpc.Tools" Version="2.78.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
@@ -66,12 +70,28 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
   </ItemGroup>
   <!-- Utility Package Versions -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.102" />
+  </ItemGroup>
+  <!-- Security pins: these three packages only arrive transitively, so they need
+       CentralPackageTransitivePinningEnabled above to take effect. Remove them
+       once the direct dependencies ship patched versions on their own. -->
+  <ItemGroup Label="Security pins">
+    <!-- MsftVersion 10.0.7 -> EFCore/SqlClient pulls Pkcs 10.0.7 (GHSA-846f-f764-76mx, high) -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+    <!-- Aspire.Hosting -> StreamJsonRpc 2.22.23 pulls MessagePack 2.5.192
+         (GHSA-hv8m-jj95-wg3x, GHSA-vh6j-jc39-fggf, high) -->
+    <PackageVersion Include="MessagePack" Version="2.5.307" />
+    <!-- DrawTogether.Actors and the E2E tests resolve OTel.Api below 1.15.3
+         (GHSA-g94r-2vxg-569j, GHSA-8785-wc3w-h8q6, moderate) -->
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.15.3" />
+    <!-- FluentEmail.Mailgun 3.0.2 pulls Newtonsoft.Json 12.0.3
+         (GHSA-5crp-9r3c-p9vr, high) -->
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
   <!-- Test Package Versions -->
   <ItemGroup>
