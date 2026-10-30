@@ -5,6 +5,42 @@ namespace DrawTogether.End2End.Tests.Util;
 
 public static class DrawTogetherPlaywrightHelpers
 {
+    /// <summary>
+    /// The first navigation from a freshly launched Chromium can be aborted with
+    /// <c>net::ERR_NETWORK_CHANGED</c>: the browser tears down in-flight requests when it
+    /// observes a host network-state change, and Docker creating/removing container bridge
+    /// interfaces while Aspire starts resources produces exactly that.
+    /// See https://github.com/microsoft/playwright/issues/13062 (same signature, retry clears it)
+    /// and https://github.com/Grizzly-Endeavors/residuum/issues/592 (Docker bridge churn).
+    /// The abort happens before the page renders anything, so retrying is side-effect free.
+    /// </summary>
+    private const string NetworkChangedError = "ERR_NETWORK_CHANGED";
+
+    public static async Task<IResponse?> GotoWithNetworkChangeRetryAsync(
+        IPage page,
+        string url,
+        PageGotoOptions? options = null,
+        ITestOutputHelper? output = null,
+        int maxAttempts = 3)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await page.GotoAsync(url, options);
+            }
+            catch (PlaywrightException ex) when (
+                attempt < maxAttempts &&
+                ex.Message.Contains(NetworkChangedError, StringComparison.Ordinal))
+            {
+                output?.WriteLine(
+                    $"Navigation to {url} aborted by {NetworkChangedError} " +
+                    $"(attempt {attempt}/{maxAttempts}); retrying.");
+                await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt));
+            }
+        }
+    }
+
     public static async Task<ElementHandleBoundingBoxResult> LocateDrawingBox(IPage page, ITestOutputHelper output)
     {
         // Wait for the canvas to be present
