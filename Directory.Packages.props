@@ -3,8 +3,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- Required so the transitive-only security pins below actually take effect. -->
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <AkkaVersion>1.5.70</AkkaVersion>
-    <AkkaHostingVersion>1.5.70</AkkaHostingVersion>
+    <AkkaVersion>1.5.75-beta-1794596265</AkkaVersion>
+    <AkkaHostingVersion>1.5.75-beta-1794596265</AkkaHostingVersion>
     <AkkaManagementVersion>1.5.70</AkkaManagementVersion>
     <PetabridgeCmdVersion>1.4.5</PetabridgeCmdVersion>
     <AspireVersion>13.3.5</AspireVersion>

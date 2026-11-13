@@ -5,6 +5,7 @@ using Akka.Discovery.Azure;
 using Akka.Discovery.Config.Hosting;
 using Akka.Discovery.KubernetesApi;
 using Akka.Hosting;
+using Akka.IO;
 using Akka.Management;
 using Akka.Management.Cluster.Bootstrap;
 using Akka.Persistence.Sql.Config;
@@ -47,6 +48,13 @@ public static class AkkaConfiguration
                             b.WithRedisDiscovery(redisConn, cfg["Akka:Cluster:ServiceName"]);
                     },
                     clusterConfigure: c => c.Roles = [roleName]);
+
+                // The plugin sets up remoting without TLS. A second WithRemoting call adds
+                // only the TLS settings on top of the plugin's host and port.
+                if (akkaSettings.TlsSettings is { Enabled: true } tls)
+                {
+                    builder.WithRemoting(new RemoteOptions { EnableSsl = true, Ssl = BuildSslOptions(tls) });
+                }
             }
             else
             {
@@ -194,21 +202,11 @@ public static class AkkaConfiguration
 
     private static void ConfigureRemoteOptionsWithTls(AkkaSettings settings)
     {
-        var tlsSettings = settings.TlsSettings!;
         var remoteOptions = settings.RemoteOptions;
-
-        // Load the certificate
-        var certificate = tlsSettings.LoadCertificate();
-        if (certificate is null)
-            throw new InvalidOperationException("TLS is enabled but no certificate could be loaded");
 
         // Configure SSL through RemoteOptions
         remoteOptions.EnableSsl = true;
-        remoteOptions.Ssl = new SslOptions
-        {
-            X509Certificate = certificate,
-            SuppressValidation = !tlsSettings.ValidateCertificates
-        };
+        remoteOptions.Ssl = BuildSslOptions(settings.TlsSettings!);
 
         // Update seed nodes to use akka.ssl.tcp:// protocol if present
         if (settings.ClusterOptions.SeedNodes?.Length > 0)
@@ -217,5 +215,25 @@ public static class AkkaConfiguration
                 .Select(node => node.Replace("akka.tcp://", "akka.ssl.tcp://"))
                 .ToArray();
         }
+    }
+
+    private static SslOptions BuildSslOptions(TlsSettings tlsSettings)
+    {
+        var ssl = new SslOptions { SuppressValidation = !tlsSettings.ValidateCertificates };
+
+        if (Directory.Exists(tlsSettings.CertificatePath))
+        {
+            // A folder rotates: the node picks the newest usable certificate in it, with no restart.
+            ssl.CertificateSource = TlsCertificateSource.FromFolder(tlsSettings.CertificatePath,
+                string.IsNullOrEmpty(tlsSettings.CertificatePassword) ? null : tlsSettings.CertificatePassword);
+        }
+        else
+        {
+            // A single file loads once at startup, as before.
+            ssl.X509Certificate = tlsSettings.LoadCertificate()
+                ?? throw new InvalidOperationException("TLS is enabled but no certificate could be loaded");
+        }
+
+        return ssl;
     }
 }
