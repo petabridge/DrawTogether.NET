@@ -26,7 +26,7 @@ $cert = New-SelfSignedCertificate `
     -FriendlyName "DrawTogether Akka.Remote Test Certificate" `
     -HashAlgorithm SHA256 `
     -KeyUsage DigitalSignature, KeyEncipherment `
-    -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.1") # Server Authentication
+    -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.1,1.3.6.1.5.5.7.3.2") # Server + Client Authentication (mutual TLS)
 
 Write-Host "Certificate created with thumbprint: $($cert.Thumbprint)" -ForegroundColor Green
 

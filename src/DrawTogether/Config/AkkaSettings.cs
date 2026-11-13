@@ -49,7 +49,8 @@ public class TlsSettings
     public bool Enabled { get; set; } = false;
 
     /// <summary>
-    /// Path to the certificate file (.pfx or .p12)
+    /// Path to the certificate file (.pfx or .p12), or to a folder of them.
+    /// A folder rotates: each node uses the newest usable certificate in it, with no restart.
     /// </summary>
     public string? CertificatePath { get; set; }
 

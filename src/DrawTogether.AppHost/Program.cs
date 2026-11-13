@@ -47,6 +47,18 @@ if (drawTogetherAspireConfig.UseAkkaManagement)
     drawTogether.WithHttpHealthCheck("/healthz/ready");
 }
 
+if (!string.IsNullOrWhiteSpace(drawTogetherAspireConfig.TlsCertificatePath))
+{
+    // Self-signed test certificates, so validation stays off.
+    drawTogether
+        .WithEnvironment("AkkaSettings__TlsSettings__Enabled", "true")
+        .WithEnvironment("AkkaSettings__TlsSettings__CertificatePath",
+            Path.GetFullPath(drawTogetherAspireConfig.TlsCertificatePath))
+        .WithEnvironment("AkkaSettings__TlsSettings__CertificatePassword",
+            drawTogetherAspireConfig.TlsCertificatePassword ?? string.Empty)
+        .WithEnvironment("AkkaSettings__TlsSettings__ValidateCertificates", "false");
+}
+
 // PBM port still needs explicit endpoint since plugin doesn't handle it
 drawTogether.WithEndpoint(name: "pbm", protocol: System.Net.Sockets.ProtocolType.Tcp,
     env: "AkkaSettings__PbmOptions__Port");
